@@ -26,9 +26,7 @@ class RDFFileSource(DataSource):
         Raises
         ------
         InvalidDataSourceConfiguration
-            If the file path is missing
-        InvalidDataSourceConfiguration
-            If the file does not exist
+            If the file path or file is missing
         """
 
         if not file_path:
