@@ -1,0 +1,12 @@
+{
+  "metrics": {
+    "foundational_format_consistency": {
+      "name": "Foundational & Format Consistency",
+      "description": "Checks lexical validity of RDF literals according to their datatype.",
+      "dimension": "Representational",
+      "subdimension": "Format Consistency",
+      "weight": 1.0,
+      "shapes_file": "shapes/foundational_format_shapes.ttl"
+    }
+  }
+}
