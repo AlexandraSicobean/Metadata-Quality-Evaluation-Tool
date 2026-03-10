@@ -1,6 +1,8 @@
 from datasource.datasource_factory import DataSourceFactory
 from metrics.metric_plugin import MetricPlugin
 from models.dataset_context import DatasetContext
+from models.dataset_evaluation_result import DatasetEvaluationResult
+from results_aggregator.result_aggregator import ResultAggregator
 
 class EvaluationEngine:
     """
@@ -12,6 +14,9 @@ class EvaluationEngine:
     3. Executes metric plugins over the dataset
     4. Aggregates all metrics into an overall score
     """
+
+    def __init__(self):
+        self.aggregator = ResultAggregator()
 
     def evaluate(self, datasets: list[dict], metrics: list[MetricPlugin]):
         """
@@ -51,8 +56,16 @@ class EvaluationEngine:
                 result = metric.evaluate(dataset_context)
                 metric_results.append(result)
 
-            all_dataset_results.append(metric_results)
+            # Aggregate results
+            overall_score = self.aggregator.aggregate(metric_results)
 
-            # Aggregate results - TO BE IMPLEMENTED
+            dataset_result = DatasetEvaluationResult(
+                dataset_id=dataset_context.dataset_id,
+                label=dataset_context.label,
+                overall_score=overall_score,
+                metrics=metric_results
+            )
+
+            all_dataset_results.append(dataset_result)
 
         return all_dataset_results
