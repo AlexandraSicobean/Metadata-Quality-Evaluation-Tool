@@ -1,6 +1,8 @@
 from pathlib import Path
 from rdflib import Graph
 from rdflib.plugin import PluginException
+from rdflib.namespace import XSD
+import rdflib.term
 
 from datasource.datasource_interface import DataSource
 from datasource.datasource_exceptions import (
@@ -37,6 +39,9 @@ class RDFFileSource(DataSource):
 
         if not self.file_path.exists():
             raise InvalidDataSourceConfiguration(f"File does not exist: {self.file_path}")
+
+        # Stop converting invalid type literals
+        rdflib.term._toPythonMapping.pop(XSD.hexBinary, None)
         
     def load(self) -> Graph:
         """

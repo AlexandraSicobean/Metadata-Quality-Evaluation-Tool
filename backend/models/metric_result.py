@@ -7,22 +7,16 @@ class MetricResult:
     ----------
     metric_id : str
         Unique identifier of the metric.
-
     name : str
         Human-readable metric name.
-
     score : float | None
         Computed metric score. None if evaluation failed.
-
     weight : float
         Weight used during score aggregation.
-
     status : str
         Execution status ("computed" or "error").
-
     details : dict
         Additional structured information about the evaluation.
-
     guidelines : dict
         Optional suggestions for improving dataset quality.
     """
