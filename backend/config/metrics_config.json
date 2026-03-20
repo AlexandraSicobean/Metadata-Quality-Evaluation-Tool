@@ -1,12 +1,10 @@
 {
   "metrics": {
-    "foundational_format_consistency": {
-      "name": "Foundational & Format Consistency",
-      "description": "Checks lexical validity of RDF literals according to their datatype.",
-      "dimension": "Representational",
-      "subdimension": "Format Consistency",
-      "weight": 1.0,
-      "shapes_file": "shapes/foundational_format_shapes.ttl"
+    "structural_completeness": {
+      "name": "Structural Completeness",
+      "description":"Measures the proportion of records that contain all required metadata fields, as defined by the detected schema profile.",
+      "dimension": "Contextual",
+      "weight": 1.0
     }
   }
 }

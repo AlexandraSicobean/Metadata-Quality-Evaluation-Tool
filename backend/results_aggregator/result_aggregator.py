@@ -31,9 +31,9 @@ class ResultAggregator:
             weighted_sum += result.score * result.weight
             total_weight += result.weight
 
-            if total_weight == 0:
-                return None
+        if total_weight == 0:
+            return None
             
-            return weighted_sum / total_weight
+        return weighted_sum / total_weight
 
 

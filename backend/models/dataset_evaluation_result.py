@@ -1,6 +1,18 @@
 class DatasetEvaluationResult:
     """
     Aggregated evaluation result for a dataset
+
+    Attributes
+    ----------
+    dataset_id : str
+        Unique identifier of the evaluated dataset.
+    label : str
+        Human-readable dataset label.
+    overall_score : float | None
+        Aggregated score computed from all evaluated metrics.
+        May be None if no numeric metrics are available.
+    metrics : list
+        List of metric evaluation results for the dataset.
     """
 
     def __init__(

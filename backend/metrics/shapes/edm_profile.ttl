@@ -1,0 +1,59 @@
+@prefix sh:      <http://www.w3.org/ns/shacl#> .
+@prefix ore:     <http://www.openarchives.org/ore/terms/> .
+@prefix edm:     <http://www.europeana.eu/schemas/edm/> .
+@prefix dc:      <http://purl.org/dc/elements/1.1/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix ex:      <http://example.org/shapes/> .
+
+ex:ProviderProxyShape
+    a sh:NodeShape ;
+    sh:targetClass ore:Proxy ;
+
+    sh:property [
+        sh:path ore:proxyFor ;
+        sh:minCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "Missing ore:proxyFor — proxy is not linked to a CHO" ;
+    ] ;
+
+    sh:property [
+        sh:path ore:proxyIn ;
+        sh:minCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "Missing ore:proxyIn — proxy is not linked to an aggregation" ;
+    ] ;
+
+    sh:property [
+        sh:path dc:title ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "Missing dc:title" ;
+    ] ;
+
+    sh:property [
+        sh:path edm:type ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "Missing edm:type" ;
+    ] ;
+
+    sh:property [
+        sh:path dc:date ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "Missing dc:date" ;
+    ] ;
+
+    sh:or (
+        [ sh:property [ sh:path dc:description ; sh:minCount 1 ] ]
+        [ sh:property [ sh:path dc:subject     ; sh:minCount 1 ] ]
+    ) ;
+    sh:message "Missing discovery field — at least one of dc:description or dc:subject is required" ;
+    sh:severity sh:Warning ;
+
+    sh:or (
+        [ sh:property [ sh:path dc:creator     ; sh:minCount 1 ] ]
+        [ sh:property [ sh:path dc:contributor ; sh:minCount 1 ] ]
+    ) ;
+    sh:message "Missing responsibility field — at least one of dc:creator or dc:contributor is required" ;
+    sh:severity sh:Warning .

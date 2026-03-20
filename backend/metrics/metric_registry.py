@@ -1,5 +1,5 @@
-from metrics.plugins.foundational_format_consistency import FoundationalFormatConsistency
+from metrics.plugins.structural_completeness import StructuralCompletenessMetric
 
 METRIC_REGISTRY = {
-    "foundational_format_consistency": FoundationalFormatConsistency
+    "structural_completeness": StructuralCompletenessMetric
 }

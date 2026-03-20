@@ -56,7 +56,7 @@ class MetricSelection(BaseModel):
     """
 
     metric_id: str
-    enalbed: bool = True
+    enabled: bool = True
 
 class EvaluationRequest(BaseModel):
     """
