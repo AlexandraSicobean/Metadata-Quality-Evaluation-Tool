@@ -5,6 +5,12 @@
       "description":"Measures the proportion of records that contain all required metadata fields, as defined by the detected schema profile.",
       "dimension": "Contextual",
       "weight": 1.0
+    },
+    "property_completeness": {
+      "name": "Property Completeness",
+      "description": "Measures the property presence across the entire dataset",
+      "dimension": "Contextual",
+      "weight": 1.0
     }
   }
 }

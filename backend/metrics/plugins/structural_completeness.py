@@ -209,7 +209,7 @@ def compute_per_record_scores(
         return {record: 1.0 for record in all_records}
 
     missing_per_record: dict[str, int] = {}
-    for prop, nodes in violations.items():
+    for _, nodes in violations.items():
         for node in nodes:
             missing_per_record[node] = missing_per_record.get(node, 0) + 1
 
@@ -243,7 +243,6 @@ def compute_score_distribution(
     bins = {f"{round(i / 10, 1)}": 0 for i in range(11)}
 
     for score in per_record_scores.values():
-        # Clamp to nearest bin, handling floating point edge cases
         bucket = min(round(round(score * 10) / 10, 1), 1.0)
         bins[str(bucket)] += 1
 
