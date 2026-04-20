@@ -1,0 +1,9 @@
+[id*="metric-card"],
+div[style*="cursor: pointer"] {
+    transition: box-shadow 0.18s ease, transform 0.18s ease, border-left 0.15s !important;
+}
+
+div[style*="cursor: pointer"]:hover {
+    box-shadow: 0 4px 16px rgba(91, 110, 245, 0.18);
+    transform: translateY(-2px);
+}

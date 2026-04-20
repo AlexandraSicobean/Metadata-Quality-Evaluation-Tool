@@ -71,3 +71,26 @@ class EvaluationResponse(BaseModel):
     """
 
     datasets: List[DatasetEvaluationResponse]
+
+class MetricConfigResponse(BaseModel):
+    """
+    API response for the metrics list
+
+    Attributes
+    ----------
+    metric_id : str
+        Identifier of the metric
+    name : str
+        Name of the metric
+    description : str
+        Metric description.
+    dimension : str
+        Corresponding dimension
+    weight: float
+        Weight in the aggregated evaluation
+    """
+    metric_id:   str
+    name:        str
+    description: str
+    dimension:   str
+    weight:      float

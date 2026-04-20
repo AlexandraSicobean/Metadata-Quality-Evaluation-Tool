@@ -6,7 +6,8 @@ from models.request import EvaluationRequest
 from models.response import (
     EvaluationResponse,
     DatasetEvaluationResponse,
-    MetricResultResponse
+    MetricResultResponse,
+    MetricConfigResponse
 )
 
 from config.config_loader import load_metrics_config
@@ -14,6 +15,26 @@ from metrics.metric_registry import METRIC_REGISTRY
 
 router = APIRouter()
 engine = EvaluationEngine()
+
+@router.get("/metrics", response_model=list[MetricConfigResponse])
+def get_metrics():
+    """
+    Returns the list of available metrics as defined in metrics_config.json.
+    Used by the frontend to populate the metric selection checklist.
+    The frontend never hardcodes metric names — it always reads from here,
+    so adding a new metric to the config automatically surfaces in the UI.
+    """
+    metric_config = load_metrics_config()
+    return [
+        MetricConfigResponse(
+            metric_id=metric_id,
+            name=config["name"],
+            description=config["description"],
+            dimension=config["dimension"],
+            weight=config["weight"]
+        )
+        for metric_id, config in metric_config.items()
+    ]
 
 @router.post("/evaluate", response_model = EvaluationResponse)
 def evaluate(request: EvaluationRequest):
