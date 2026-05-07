@@ -10,18 +10,32 @@ from layout.main_panel import build_guide, build_error, build_analysis, build_co
     prevent_initial_call=True,
 )
 def render_main_panel(results):
-    reset_ui = {"active_metric": None, "active_class": None}
-
     if results is None:
-        return build_guide(), reset_ui
+        return build_guide(), {"active_metric": None, "active_class": None}
     if results.get("status") == "error":
-        return build_error(results.get("error_message", "Unknown error.")), reset_ui
+        return (
+            build_error(results.get("error_message", "Unknown error.")),
+            {"active_metric": None, "active_class": None},
+        )
 
     datasets = results.get("datasets", [])
 
-    if results.get("mode") == "analysis":
-        return build_analysis(datasets, active_metric_id=None), reset_ui
-    if results.get("mode") == "comparison":
-        return build_comparison(datasets, active_metric_id=None), reset_ui
+    # Auto-select the first metric so the detail panel shows immediately
+    # rather than waiting for the user to discover the cards are clickable.
+    first_metric = None
+    if datasets:
+        metrics = [
+            m for m in datasets[0].get("metrics", [])
+            if m.get("status") not in ("error", "skipped")
+        ]
+        if metrics:
+            first_metric = metrics[0]["metric_id"]
 
-    return build_guide(), reset_ui
+    initial_ui = {"active_metric": first_metric, "active_class": None}
+
+    if results.get("mode") == "analysis":
+        return build_analysis(datasets, active_metric_id=first_metric), initial_ui
+    if results.get("mode") == "comparison":
+        return build_comparison(datasets, active_metric_id=first_metric), initial_ui
+
+    return build_guide(), {"active_metric": None, "active_class": None}

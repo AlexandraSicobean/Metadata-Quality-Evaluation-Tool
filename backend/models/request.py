@@ -1,22 +1,23 @@
 from pydantic import BaseModel
 from typing import Optional, List
 
+
 class SourceConfig(BaseModel):
     """
-    Configuration for loading datasets
+    Configuration for loading datasets.
 
     Attributes
     ----------
     type : str
-        Type of data source (e.g., 'rdf_file', 'sparql_endpoint').
+        Data source type: rdf_file or sparql_endpoint.
     file_path : str | None
-        Path to a local RDF file.
+        Path to a local RDF file (rdf_file sources only).
     format : str | None
-        RDF serialization format.
+        RDF serialisation format, e.g. 'turtle', 'xml', 'n3'.
     endpoint_url : str | None
-        SPARQL endpoint URL.
+        SPARQL endpoint URL (sparql_endpoint sources only).
     query : str | None
-        SPARQL query used to retrieve RDF data.
+        SPARQL CONSTRUCT/SELECT query (sparql_endpoint sources only).
     """
 
     type: str
@@ -25,6 +26,7 @@ class SourceConfig(BaseModel):
     endpoint_url: Optional[str] = None
     query: Optional[str] = None
 
+
 class DatasetRequest(BaseModel):
     """
     Dataset descriptor received from the frontend.
@@ -32,16 +34,22 @@ class DatasetRequest(BaseModel):
     Attributes
     ----------
     dataset_id : str
-        Unique dataset identifier.
+        Client-generated UUID that identifies the source in the sidebar.
     label : str | None
-        Optional human-readable label.
+        Human-readable label shown in the UI.
     source_config : SourceConfig
-        Configuration describing how the dataset should be loaded.
+        Describes how the dataset should be loaded.
+    scope : List[str] | None
+        Optional list of class URIs to restrict evaluation to.
+        None (default) means the full graph is evaluated.
+        An empty list [] is treated identically to None.
     """
 
     dataset_id: str
     label: Optional[str] = None
     source_config: SourceConfig
+    scope: Optional[List[str]] = None
+
 
 class MetricSelection(BaseModel):
     """
@@ -52,23 +60,41 @@ class MetricSelection(BaseModel):
     metric_id : str
         Identifier of the metric to evaluate.
     enabled : bool
-        Indicates whether the metric is enabled.
+        Whether the metric is enabled.
     """
 
     metric_id: str
     enabled: bool = True
 
+
 class EvaluationRequest(BaseModel):
     """
-    Evaluation request received by the API.
+    Evaluation request body for POST /evaluate.
 
     Attributes
     ----------
     datasets : List[DatasetRequest]
-        List of datasets to evaluate.
+        Datasets to evaluate (each may carry an optional scope).
     metrics : List[MetricSelection]
-        List of selected metrics.
+        Metrics to run.
     """
 
     datasets: List[DatasetRequest]
     metrics: List[MetricSelection]
+
+
+class OntologyRequest(BaseModel):
+    """
+    Request body for POST /ontology.
+
+
+    Attributes
+    ----------
+    dataset_id : str
+    source_config : SourceConfig
+        Describes how the dataset should be loaded (or retrieved from
+        cache).
+    """
+    
+    dataset_id: str
+    source_config: SourceConfig

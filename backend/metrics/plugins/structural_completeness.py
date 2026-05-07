@@ -277,6 +277,7 @@ def compute_class_statistics(
             - "median": median score
             - "min": minimum score
             - "max": maximum score
+            - "scores": scores of items in a class
     """
     class_scores: dict[str, list[float]] = {}
 
@@ -294,6 +295,7 @@ def compute_class_statistics(
             "median": round(statistics.median(scores), 4),
             "min":    round(min(scores), 4),
             "max":    round(max(scores), 4),
+            "scores": scores,
         }
         for cls, scores in class_scores.items()
     }

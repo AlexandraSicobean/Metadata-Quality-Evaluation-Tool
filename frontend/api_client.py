@@ -2,11 +2,8 @@ import requests
 
 BACKEND_URL = "http://127.0.0.1:8000"
 
+
 class APIError(Exception):
-    """
-    Raised when the backend returns an error or is unreachable.
-    Carries a human-readable message suitable for display in the UI.
-    """
     def __init__(self, message: str, status_code: int | None = None):
         super().__init__(message)
         self.message     = message
@@ -15,63 +12,75 @@ class APIError(Exception):
 
 def get_metrics() -> list[dict]:
     """
-    Fetches the list of available metrics from the backend.
-
-    Called once on sidebar initialisation so the metric checklist
-    always reflects what the backend actually supports.
-
-    Returns
-    -------
-    list[dict]
-        Each dict has: metric_id, name, description, dimension, weight.
-
-    Raises
-    ------
-    APIError
-        If the backend is unreachable or returns a non-200 response.
+    GET /metrics — fetches available metrics on sidebar startup.
+    Returns list of {metric_id, name, description, dimension, weight}.
     """
     try:
         response = requests.get(f"{BACKEND_URL}/metrics", timeout=10)
     except requests.ConnectionError:
-        raise APIError(
-            "Cannot reach the backend. "
-            "Make sure the FastAPI server is running on port 8000."
-        )
+        raise APIError("Cannot reach the backend. Make sure the FastAPI server is running.")
     except requests.Timeout:
         raise APIError("Request to /metrics timed out.")
 
     if response.status_code != 200:
-        raise APIError(
-            f"Unexpected response from /metrics: {response.status_code}",
-            status_code=response.status_code
+        raise APIError(f"Unexpected response from /metrics: {response.status_code}",
+                       status_code=response.status_code)
+    return response.json()
+
+
+def get_ontology(source: dict) -> dict:
+    """
+    POST /ontology — fetches the class/property tree for a single source.
+
+    Called lazily when the user expands a source card in the sidebar.
+    The backend caches the parsed graph so this is cheap if /evaluate
+    has already been called on the same source.
+
+    Parameters
+    ----------
+    source
+        A single store-sources entry with 'id', 'label', 'source_config'.
+
+    Returns
+    -------
+    dict
+        {dataset_id, classes: [{uri, label, instance_count, properties, children}]}
+    """
+    payload = {
+        "dataset_id":   source["id"],
+        "source_config": source["source_config"],
+    }
+
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/ontology",
+            json=payload,
+            timeout=60,
         )
+    except requests.ConnectionError:
+        raise APIError("Cannot reach the backend.")
+    except requests.Timeout:
+        raise APIError("Ontology extraction timed out.")
+
+    if response.status_code != 200:
+        detail = response.json().get("detail", "Unknown error.")
+        raise APIError(f"Ontology request failed: {detail}",
+                       status_code=response.status_code)
 
     return response.json()
 
 
 def run_evaluation(sources: list[dict], metric_ids: list[str]) -> list[dict]:
     """
-    Sends an evaluation request to POST /evaluate and returns the
-    raw datasets list from the response.
+    POST /evaluate — runs evaluation and returns the raw datasets list.
 
     Parameters
     ----------
     sources
-        Selected entries from store-sources. Each must have
-        'dataset_id', 'label', and 'source_config'.
+        Selected store-sources entries. Each must have 'id', 'label',
+        'source_config', and optionally 'scope' (list of class URIs or None).
     metric_ids
-        List of metric_id strings the user has selected.
-
-    Returns
-    -------
-    list[dict]
-        The raw 'datasets' array from the API response.
-
-    Raises
-    ------
-    APIError
-        If the backend is unreachable, returns a non-200 response,
-        or returns a 400 (bad request, e.g. unknown metric).
+        List of metric_id strings.
     """
     payload = _build_evaluation_payload(sources, metric_ids)
 
@@ -79,67 +88,46 @@ def run_evaluation(sources: list[dict], metric_ids: list[str]) -> list[dict]:
         response = requests.post(
             f"{BACKEND_URL}/evaluate",
             json=payload,
-            timeout=120       
+            timeout=120,
         )
     except requests.ConnectionError:
-        raise APIError(
-            "Cannot reach the backend. "
-            "Make sure the FastAPI server is running on port 8000."
-        )
+        raise APIError("Cannot reach the backend.")
     except requests.Timeout:
-        raise APIError(
-            "The evaluation timed out. "
-            "Try reducing the dataset size or the number of metrics."
-        )
+        raise APIError("The evaluation timed out. Try reducing the dataset size or metrics.")
 
     if response.status_code == 400:
         detail = response.json().get("detail", "Bad request.")
         raise APIError(f"Evaluation request rejected: {detail}", status_code=400)
 
     if response.status_code != 200:
-        raise APIError(
-            f"Unexpected response from /evaluate: {response.status_code}",
-            status_code=response.status_code
-        )
+        raise APIError(f"Unexpected response from /evaluate: {response.status_code}",
+                       status_code=response.status_code)
 
     return response.json()["datasets"]
 
 
-def _build_evaluation_payload(
-    sources: list[dict],
-    metric_ids: list[str]
-) -> dict:
+def _build_evaluation_payload(sources: list[dict], metric_ids: list[str]) -> dict:
     """
-    Translates store-sources entries and selected metric ids into
-    the exact JSON shape that POST /evaluate expects.
+    Builds the POST /evaluate request body.
 
-    This is a private helper — only api_client should call it.
-    Keeping the payload construction here means that if the API
-    request shape ever changes, this is the only place to update.
-
-    Parameters
-    ----------
-    sources
-        Selected entries from store-sources.
-    metric_ids
-        Metric ids the user has selected.
-
-    Returns
-    -------
-    dict
-        Ready-to-serialise request body.
+    Includes scope per dataset when set — the backend filters the graph
+    to only triples whose subject is an instance of the selected classes.
+    Omitting scope (or passing None / []) evaluates the full graph.
     """
+    datasets = []
+    for source in sources:
+        entry = {
+            "dataset_id":    source["id"],
+            "label":         source["label"],
+            "source_config": source["source_config"],
+        }
+        # Only include scope when the user has made a selection
+        scope = source.get("scope")
+        if scope:
+            entry["scope"] = scope
+        datasets.append(entry)
+
     return {
-        "datasets": [
-            {
-                "dataset_id":    source["id"],
-                "label":         source["label"],
-                "source_config": source["source_config"],
-            }
-            for source in sources
-        ],
-        "metrics": [
-            {"metric_id": metric_id}
-            for metric_id in metric_ids
-        ]
+        "datasets": datasets,
+        "metrics":  [{"metric_id": mid} for mid in metric_ids],
     }

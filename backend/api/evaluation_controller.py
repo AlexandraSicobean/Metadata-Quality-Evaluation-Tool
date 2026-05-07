@@ -1,13 +1,20 @@
 from fastapi import APIRouter, HTTPException
 
 from engine.evaluation_engine import EvaluationEngine
+from datasource.datasource_factory import DataSourceFactory
+from graph.graph_cache import get_or_load
+from graph.ontology_extractor import extract, ClassNode, PropertyInfo
 
-from models.request import EvaluationRequest
+from models.request import EvaluationRequest, OntologyRequest
 from models.response import (
     EvaluationResponse,
     DatasetEvaluationResponse,
+    DatasetStatsResponse,
     MetricResultResponse,
-    MetricConfigResponse
+    MetricConfigResponse,
+    OntologyResponse,
+    ClassNodeResponse,
+    PropertyInfoResponse,
 )
 
 from config.config_loader import load_metrics_config
@@ -16,14 +23,23 @@ from metrics.metric_registry import METRIC_REGISTRY
 router = APIRouter()
 engine = EvaluationEngine()
 
+
+def _class_node_to_response(node: ClassNode) -> ClassNodeResponse:
+    return ClassNodeResponse(
+        uri=node.uri,
+        label=node.label,
+        instance_count=node.instance_count,
+        properties=[
+            PropertyInfoResponse(uri=p.uri, label=p.label, count=p.count)
+            for p in node.properties
+        ],
+        children=[_class_node_to_response(child) for child in node.children],
+    )
+
+
 @router.get("/metrics", response_model=list[MetricConfigResponse])
 def get_metrics():
-    """
-    Returns the list of available metrics as defined in metrics_config.json.
-    Used by the frontend to populate the metric selection checklist.
-    The frontend never hardcodes metric names — it always reads from here,
-    so adding a new metric to the config automatically surfaces in the UI.
-    """
+    """Returns available metrics from metrics_config.json."""
     metric_config = load_metrics_config()
     return [
         MetricConfigResponse(
@@ -31,38 +47,52 @@ def get_metrics():
             name=config["name"],
             description=config["description"],
             dimension=config["dimension"],
-            weight=config["weight"]
+            weight=config["weight"],
         )
         for metric_id, config in metric_config.items()
     ]
 
-@router.post("/evaluate", response_model = EvaluationResponse)
+
+@router.post("/ontology", response_model=OntologyResponse)
+def get_ontology(request: OntologyRequest):
+    """
+    Returns the class hierarchy found in the dataset.
+
+    Uses get_or_load so that a subsequent /evaluate call for the
+    same source reuses the cached graph at zero cost.
+    """
+    source_config = request.source_config.model_dump()
+
+    try:
+        def _load():
+            datasource = DataSourceFactory.create(source_config)
+            return datasource.load()
+
+        graph = get_or_load(source_config, _load)
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Could not load dataset: {exc}",
+        ) from exc
+
+    class_nodes = extract(graph)
+
+    return OntologyResponse(
+        dataset_id=request.dataset_id,
+        classes=[_class_node_to_response(node) for node in class_nodes],
+    )
+
+
+@router.post("/evaluate", response_model=EvaluationResponse)
 def evaluate(request: EvaluationRequest):
     """
     Executes metadata quality evaluation for the requested datasets.
 
-    The endpoint receives dataset descriptors and metric selections,
-    initializes the metric plugins, runs the evaluation engine, and 
-    converts results into API response models
-
-    Parameters
-    ----------
-    request
-        Evaluation request containing dataset definitions and
-        selected metrics (TODO: add scope)
-
-    Returns
-    -------
-    evaluation_response
-        Structured evaluation results for all datasets
-
-    Raises
-    ------
-    HTTPException
-        If a requested metric is not defined in the configuration or
-        no plugin implementation is registered for the metric.
+    The router resolves metric plugins and passes a clean dataset list
+    to the Evaluation Engine. Graph loading, caching, and scope
+    filtering are handled entirely by the engine and data source layer.
     """
-
     metric_config = load_metrics_config()
     metrics = []
 
@@ -71,52 +101,63 @@ def evaluate(request: EvaluationRequest):
 
         if metric_id not in metric_config:
             raise HTTPException(
-                status_code = 400,
-                detail = f"Metric '{metric_id}' is not defined in configuration."
+                status_code=400,
+                detail=f"Metric '{metric_id}' is not defined in configuration.",
             )
-        
-        metric_class = METRIC_REGISTRY.get(metric_id)
 
+        metric_class = METRIC_REGISTRY.get(metric_id)
         if not metric_class:
             raise HTTPException(
-                status_code = 500,
-                detail = f"No plugin registered for metric '{metric_id}'."
+                status_code=500,
+                detail=f"No plugin registered for metric '{metric_id}'.",
             )
-        
+
         metrics.append(metric_class())
 
-    datasets = [dataset.model_dump() for dataset in request.datasets]
+    datasets = [
+        {
+            "dataset_id":    dataset_req.dataset_id,
+            "label":         dataset_req.label,
+            "source_config": dataset_req.source_config.model_dump(),
+            "scope":         dataset_req.scope,
+        }
+        for dataset_req in request.datasets
+    ]
 
-    results = engine.evaluate(
-        datasets=datasets,
-        metrics=metrics
-    )
+    try:
+        results = engine.evaluate(datasets=datasets, metrics=metrics)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Evaluation failed: {exc}",
+        ) from exc
 
     response_datasets = []
 
     for dataset_result in results:
-
-        metric_responses = []
-
-        for metric in dataset_result.metrics:
-
-            metric_responses.append(
-                MetricResultResponse(
-                    metric_id=metric.metric_id,
-                    name=metric.name,
-                    score=metric.score,
-                    weight=metric.weight,
-                    status=metric.status,
-                    details=metric.details
-                )
+        metric_responses = [
+            MetricResultResponse(
+                metric_id=m.metric_id,
+                name=m.name,
+                score=m.score,
+                weight=m.weight,
+                status=m.status,
+                details=m.details,
             )
+            for m in dataset_result.metrics
+        ]
+
+        stats_response = None
+        if dataset_result.stats:
+            stats_response = DatasetStatsResponse(**dataset_result.stats)
 
         response_datasets.append(
             DatasetEvaluationResponse(
                 dataset_id=dataset_result.dataset_id,
                 label=dataset_result.label,
                 overall_score=dataset_result.overall_score,
-                metrics=metric_responses
+                metrics=metric_responses,
+                stats=stats_response,
             )
         )
 

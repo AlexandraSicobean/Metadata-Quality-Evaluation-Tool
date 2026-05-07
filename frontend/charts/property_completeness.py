@@ -201,7 +201,7 @@ def analysis_property_drilldown(
     present_vals = [fill_rates[p].get("present", 0) for p in props]
     missing_vals = [fill_rates[p].get("missing", 0) for p in props]
     fill_pcts    = [
-        f"{round(fill_rates[p].get('fill_rate', 0) * 100)}%"
+        f"{round(fill_rates[p].get('fill_rate', 0) * 100, 1)}%"
         for p in props
     ]
     custom = [(p, fill_rates[p].get("present", 0),
@@ -330,7 +330,7 @@ def comparison_property_drilldown(
             opacity=0.9,
             customdata=custom,
             hovertemplate="%{customdata}<br>Fill rate: %{x:.1%}<extra></extra>",
-            text=[f"{round(r*100)}%" if r is not None else "—" for r in rates],
+            text=[f"{round(r*100, 1)}%" if r is not None else "—" for r in rates],
             textposition="outside",
         )
 

@@ -1,70 +1,77 @@
-from pathlib import Path
 from rdflib import Graph
-from rdflib.plugin import PluginException
-from rdflib.namespace import XSD
-import rdflib.term
 
 from datasource.datasource_interface import DataSource
 from datasource.datasource_exceptions import (
     InvalidDataSourceConfiguration,
     DataSourceLoadError
 )
+import graph.graph_cache as _cache
+
 
 class RDFFileSource(DataSource):
-    """ 
-    DataSource strategy that loads RDF data from a local file and stores it
-    into an rdflib.Graph.
     """
-    def __init__(self, file_path: str, rdf_format: str | None = None):
+    DataSource strategy that loads RDF data from a local file.
+
+    Parsed graphs are retained in the shared in-memory cache keyed
+    by a hash of the source configuration. Subsequent calls with the
+    same configuration return the cached graph without re-parsing.
+    """
+
+    def __init__(self, file_path: str, rdf_format: str = None):
         """
         Parameters
         ----------
-        file_path: str
-            Path to the RDF file on the disk
-        rdf_format: str
-            Optional RDF serialization format (e.g., 'xml', 'turtle', 'nt'). 
-            If None, rdflib attempts auto-detection
-        
+        file_path : str
+            Path to the local RDF file.
+        rdf_format : str | None
+            RDF serialisation format (e.g. 'turtle', 'xml', 'n3').
+            If None, rdflib will attempt auto-detection.
+
         Raises
         ------
         InvalidDataSourceConfiguration
-            If the file path or file is missing
+            If file_path is missing.
         """
-
         if not file_path:
             raise InvalidDataSourceConfiguration("File path is missing.")
-        
-        self.file_path = Path(file_path)
+
+        self.file_path = file_path
         self.rdf_format = rdf_format
+        self._source_config = {
+            "type": "rdf_file",
+            "file_path": file_path,
+            "format": rdf_format,
+        }
 
-        if not self.file_path.exists():
-            raise InvalidDataSourceConfiguration(f"File does not exist: {self.file_path}")
-
-        # Stop converting invalid type literals
-        rdflib.term._toPythonMapping.pop(XSD.hexBinary, None)
-        
     def load(self) -> Graph:
         """
-        Loads and parses the RDF file into an rdflib.Graph.
+        Returns the parsed RDF graph, loading from disk on first call
+        and from cache on subsequent calls.
 
         Returns
         -------
-        graph
-            Graph containing all triples from the file
-        
+        rdflib.Graph
+
         Raises
         ------
         DataSourceLoadError
-            If parsing fails or format is unsupported
+            If the file cannot be found or parsed.
         """
-        graph = Graph()
+        cached = _cache.get(self._source_config)
+        if cached is not None:
+            return cached
 
         try:
-            graph.parse(str(self.file_path), format = self.rdf_format)
-        except PluginException as e:
-            raise DataSourceLoadError(f"Unsupported RDF format: {self.rdf_format}") from e
+            graph = Graph()
+            graph.parse(self.file_path, format=self.rdf_format)
+        except FileNotFoundError:
+            raise DataSourceLoadError(
+                f"RDF file not found: {self.file_path}"
+            )
         except Exception as e:
-            raise DataSourceLoadError(f"Failed to parse the RDF file: {self.file_path}") from e
-        
+            raise DataSourceLoadError(
+                f"Failed to parse RDF file '{self.file_path}': {e}"
+            ) from e
+
+        _cache.store(self._source_config, graph)
         return graph
-        

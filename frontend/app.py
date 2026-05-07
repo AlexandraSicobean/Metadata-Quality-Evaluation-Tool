@@ -18,11 +18,11 @@ app.layout = dbc.Container(
 
         # ── Stores ────────────────────────────────────────────────────────
         dcc.Store(id="store-sources", data=[]),
-        dcc.Store(id="store-results", data=None),
+        dcc.Store(id="store-results",  data=None),
+        dcc.Store(id="store-ontology", data={}),
         dcc.Store(id="store-ui", data={
             "active_metric": None,
-            "active_class":  None,
-            "prop_view":     "missing",
+            "active_class":  None
         }),
 
         # Maps metric_id → dimension string, populated by populate_metrics.
@@ -50,8 +50,7 @@ app.layout = dbc.Container(
     ]
 )
 
-# Register all callbacks by importing the modules.
-# The decorators fire on import; order does not matter.
+
 import callbacks.sources      # noqa: F401, E402
 import callbacks.evaluation   # noqa: F401, E402
 import callbacks.main_panel   # noqa: F401, E402

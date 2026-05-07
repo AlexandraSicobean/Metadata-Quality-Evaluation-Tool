@@ -39,9 +39,9 @@ def render(metric: dict, datasets: list[dict]) -> html.Div:
         ),
     ])
 
-    class_fig = charts.class_completeness(ds_details)
+    class_fig = charts.class_completeness_violin(ds_details)
     class_section = panel_card([
-        section_label("Class-level completeness (mean ± range)"),
+        section_label("Class-level completeness distribution"),
         dcc.Graph(figure=class_fig, config={"displayModeBar": False}),
     ]) if class_fig else html.Div()
 

@@ -6,54 +6,74 @@ from datasource.datasource_exceptions import (
     InvalidDataSourceConfiguration,
     DataSourceLoadError
 )
+import graph.graph_cache as _cache
+
 
 class SPARQLEndpointSource(DataSource):
     """
     DataSource strategy that retrieves RDF data from a SPARQL endpoint
     using a CONSTRUCT query and materializes it into an rdflib.Graph.
+
+    Results are cached in the shared in-memory cache keyed by a hash
+    of the source configuration (endpoint URL + query). Subsequent
+    calls with the same configuration return the cached graph without
+    re-querying the endpoint.
     """
 
     def __init__(self, endpoint_url: str, query: str):
         """
         Parameters
         ----------
-        endpoint_url: str
-            Public endpoint url
-        query: str
-            SPARQL query 
-        
+        endpoint_url : str
+            Public SPARQL endpoint URL.
+        query : str
+            SPARQL CONSTRUCT query.
+
         Raises
         ------
         InvalidDataSourceConfiguration
-            If the endpoint or query is missing
+            If the endpoint or query is missing.
         """
-
         if not endpoint_url:
-            raise InvalidDataSourceConfiguration("Endpoint is missing")
+            raise InvalidDataSourceConfiguration("Endpoint is missing.")
         if not query:
-            raise InvalidDataSourceConfiguration("Query is missing")
-        
+            raise InvalidDataSourceConfiguration("Query is missing.")
+
         self.endpoint_url = endpoint_url
         self.query = query
+        self._source_config = {
+            "type": "sparql_endpoint",
+            "endpoint_url": endpoint_url,
+            "query": query,
+        }
 
     def load(self) -> Graph:
         """
-        Retrieves data that matches the query and stores it into
-        an rdflib.Graph
+        Returns the queried RDF graph, fetching from the endpoint on
+        first call and from cache on subsequent calls.
 
         Returns
         -------
-        graph
-            Graph containing all triples matching the query
-        
+        rdflib.Graph
+
         Raises
         ------
         DataSourceLoadError
-            If a CONSTRUCT query cannot be returned
+            If the endpoint cannot be reached or the query fails.
         """
+        cached = _cache.get(self._source_config)
+        if cached is not None:
+            return cached
+
         try:
-            store = SPARQLStore(self.endpoint_url)
-            graph = Graph(store = store)
+            store = SPARQLStore(
+                self.endpoint_url,
+                headers={
+                    "User-Agent": "MetadataQualityTool/1.0",
+                    "Accept": "text/turtle, application/rdf+xml"
+                }
+            )
+            graph = Graph(store=store)
             results = graph.query(self.query)
 
             if not hasattr(results, "graph"):
@@ -61,9 +81,14 @@ class SPARQLEndpointSource(DataSource):
                     "SPARQL query could not return a CONSTRUCT graph."
                 )
 
-            return results.graph
-        
+            loaded_graph = results.graph
+
+        except DataSourceLoadError:
+            raise
         except Exception as e:
             raise DataSourceLoadError(
                 f"Failed to query SPARQL endpoint: {self.endpoint_url}"
             ) from e
+
+        _cache.store(self._source_config, graph)
+        return loaded_graph

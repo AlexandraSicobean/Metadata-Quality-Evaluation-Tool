@@ -321,15 +321,42 @@ def toggle_source_selection(checkbox_values, sources):
 @callback(
     Output("source-list", "children"),
     Input("store-sources", "data"),
+    State("source-list",   "children"),
 )
-def render_source_list(sources):
+def render_source_list(sources, current_children):
+    # Only rebuild the list when the set of source ids changes (add/delete)
+    # or when label/source_config changes (edit).
+    # Skip when only scope or expanded changed — those are handled by
+    # render_scope_trees and update_scope callbacks respectively.
+    # This prevents those callbacks from destroying the scope tree content.
     if not sources:
         return html.P(
             "No sources added yet.",
             className="text-muted",
             style={"fontSize": "0.8rem"},
         )
+
+    if ctx.triggered_id == "store-sources" and current_children:
+        # Extract current source ids and labels from the existing rendered list
+        # to detect whether a structural change actually happened.
+        # If only scope/expanded changed, return no_update.
+        triggered_keys = [
+            (s["id"], s["label"], s["source_config"].get("file_path", "")
+             or s["source_config"].get("endpoint_url", ""))
+            for s in sources
+        ]
+        # We can't easily inspect current_children (they're dicts), so instead
+        # we store the last-rendered keys in a module-level variable.
+        if triggered_keys == _last_rendered_source_keys[0]:
+            return no_update
+        _last_rendered_source_keys[0] = triggered_keys
+
     return [build_source_item(s) for s in sources]
+
+
+# Module-level mutable container to track last rendered source keys.
+# List wrapper used so it can be mutated inside the callback (closure).
+_last_rendered_source_keys = [[]]
 
 
 # ── 8. Enable/disable Run button + set label ─────────────────────────────
@@ -355,3 +382,231 @@ def update_run_button(sources, selected_metrics):
 
     label = "Run Analysis" if n_sources == 1 else "Run Comparison"
     return False, label, ""
+
+
+# ── 9. Toggle source expanded state + fetch ontology ─────────────────────
+#
+# Fires when the user clicks the expand (▸/▾) button on a source card.
+# Toggles source["expanded"] in store-sources, then if expanding and the
+# ontology hasn't been fetched yet, calls POST /ontology and stores the
+# result in store-ontology keyed by source_id.
+
+@callback(
+    Output("store-sources",  "data", allow_duplicate=True),
+    Output("store-ontology", "data", allow_duplicate=True),
+    Input({"type": "btn-expand-source", "index": ALL}, "n_clicks"),
+    State("store-sources",  "data"),
+    State("store-ontology", "data"),
+    prevent_initial_call=True,
+)
+def toggle_expand_source(n_clicks_list, sources, ontology_store):
+    if not any(n for n in (n_clicks_list or []) if n):
+        return no_update, no_update
+
+    source_id = ctx.triggered_id["index"]
+    sources   = list(sources or [])
+    ontology  = dict(ontology_store or {})
+
+    updated = []
+    for s in sources:
+        if s["id"] == source_id:
+            s = dict(s)
+            s["expanded"] = not s.get("expanded", False)
+
+            if s["expanded"] and source_id not in ontology:
+                # Write sentinel None first — triggers render_scope_trees
+                # to show the spinner before the fetch starts.
+                ontology[source_id] = None
+        updated.append(s)
+
+    return updated, ontology
+
+
+@callback(
+    Output("store-ontology", "data", allow_duplicate=True),
+    Input("store-ontology",  "data"),
+    State("store-sources",   "data"),
+    prevent_initial_call=True,
+)
+def fetch_ontology(ontology_store, sources):
+    """
+    Fires after toggle_expand_source writes the None sentinel.
+    Finds any source with a None entry in the ontology store,
+    fetches the real data, and writes it back.
+    Runs as a separate callback so the spinner has time to render first.
+    """
+    ontology = dict(ontology_store or {})
+    sources  = sources or []
+
+    # Find sources that need fetching (sentinel = None)
+    to_fetch = [
+        s for s in sources
+        if s.get("expanded") and ontology.get(s["id"]) is None
+    ]
+    if not to_fetch:
+        return no_update
+
+    updated = False
+    for s in to_fetch:
+        sid = s["id"]
+        try:
+            from api_client import get_ontology, APIError
+            result = get_ontology(s)
+            ontology[sid] = result
+        except APIError as exc:
+            ontology[sid] = {"error": str(exc)}
+        updated = True
+
+    return ontology if updated else no_update
+
+
+# ── 10. Render scope tree when source is expanded ─────────────────────────
+
+@callback(
+    Output({"type": "scope-tree", "index": ALL}, "children"),
+    Output({"type": "scope-tree", "index": ALL}, "style"),
+    Input("store-ontology", "data"),
+    State("store-sources",  "data"),
+    prevent_initial_call=True,
+)
+def render_scope_trees(ontology_store, sources):
+    from layout.sidebar import build_scope_tree
+
+    sources      = sources or []
+    ontology     = ontology_store or {}
+    children_out = []
+    styles_out   = []
+
+    base_style = {
+        "border":          "1px solid #dee2e6",
+        "borderTop":       "none",
+        "borderRadius":    "0 0 4px 4px",
+        "padding":         "8px",
+        "backgroundColor": "#f8f9fa",
+        "maxHeight":       "260px",
+        "overflowY":       "auto",
+    }
+
+    for s in sources:
+        sid      = s["id"]
+        expanded = s.get("expanded", False)
+        scope    = set(s.get("scope") or [])
+
+        if not expanded:
+            children_out.append(no_update)
+            styles_out.append({"display": "none"})
+            continue
+
+        styles_out.append({**base_style, "display": "block"})
+
+        tree_data = ontology.get(sid)
+        if tree_data is None:
+            # Fetch in progress — show a spinner via dbc.Spinner inline
+            children_out.append(
+                html.Div([
+                    dbc.Spinner(size="sm", color="primary",
+                                spinner_style={"marginRight": "8px"}),
+                    html.Span("Loading ontology…",
+                              className="text-muted",
+                              style={"fontSize": "0.8rem"}),
+                ], style={"display": "flex", "alignItems": "center",
+                          "padding": "8px 0"})
+            )
+        elif "error" in tree_data:
+            children_out.append(
+                html.P(f"Could not load ontology: {tree_data['error']}",
+                       className="text-danger mb-0",
+                       style={"fontSize": "0.8rem"})
+            )
+        else:
+            children_out.append(
+                build_scope_tree(tree_data.get("classes", []), sid, scope)
+            )
+
+    return children_out, styles_out
+
+
+# ── 11. Update scope in store-sources when a class checkbox is toggled ────
+#
+# Cascade rules:
+#   Check parent   → add parent + all descendants
+#   Uncheck parent → remove parent + all descendants
+#   Uncheck child  → remove only that child (parent stays checked)
+
+def _all_descendants(uri: str, classes: list) -> set:
+    """Recursively collect all descendant URIs of a given class URI."""
+    result = set()
+    for cls in classes:
+        if cls["uri"] == uri:
+            for child in cls.get("children", []):
+                result.add(child["uri"])
+                result |= _all_descendants(child["uri"], cls["children"])
+        else:
+            result |= _all_descendants(uri, cls.get("children", []))
+    return result
+
+
+def _flatten_uris(classes: list) -> set:
+    """Return all URIs in the tree (including nested)."""
+    result = set()
+    for cls in classes:
+        result.add(cls["uri"])
+        result |= _flatten_uris(cls.get("children", []))
+    return result
+
+
+@callback(
+    Output("store-sources", "data", allow_duplicate=True),
+    Input({"type": "scope-checkbox", "index": ALL}, "value"),
+    State("store-sources",  "data"),
+    State("store-ontology", "data"),
+    prevent_initial_call=True,
+)
+def update_scope(checkbox_values, sources, ontology_store):
+    if not sources:
+        return no_update
+
+    ontology = ontology_store or {}
+
+    # Find which checkbox changed
+    triggered = ctx.triggered_id
+    if not triggered or not isinstance(triggered, dict):
+        return no_update
+
+    raw       = triggered["index"]   # "{source_id}::{class_uri}"
+    source_id, toggled_uri = raw.split("::", 1)
+
+    # Find the triggering checkbox value
+    toggled_value = next(
+        (item["value"] for item in ctx.inputs_list[0]
+         if item["id"]["index"] == raw),
+        False,
+    )
+
+    # Get ontology tree for this source (for cascade)
+    tree_classes = ontology.get(source_id, {}).get("classes", [])
+    descendants  = _all_descendants(toggled_uri, tree_classes)
+
+    updated = []
+    for s in sources:
+        if s["id"] != source_id:
+            updated.append(s)
+            continue
+
+        s = dict(s)
+        current_scope = set(s.get("scope") or [])
+
+        if toggled_value:
+            # Check: add this URI + all descendants
+            current_scope.add(toggled_uri)
+            current_scope |= descendants
+        else:
+            # Uncheck: remove this URI + all descendants
+            current_scope.discard(toggled_uri)
+            current_scope -= descendants
+
+        # None = full graph (no filter applied)
+        s["scope"] = sorted(current_scope) if current_scope else None
+        updated.append(s)
+
+    return updated

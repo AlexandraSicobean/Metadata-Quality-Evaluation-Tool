@@ -9,20 +9,20 @@ from models.metric_result import MetricResult
 from metrics.metrics_exceptions import EmptyGraphError, NoTargetRecordsError
 
 
-# Properties that are structural/administrative and uninformative
-# for completeness analysis — present on every record by definition
 EXCLUDED_PROPERTIES = {
     str(RDF.type),
 }
 
 
-def get_records_by_class(graph: Graph) -> dict[str, set[str]]:
+def get_records_by_class(graph: Graph, scope: list[str] | None = None) -> dict[str, set[str]]:
     """
     Groups all named (non-blank) subjects by their rdf:type.
 
     Each record appears under every class it belongs to.
     Records with no type are grouped under 'Unknown'.
     """
+    scope_set = set(scope) if scope else None
+    print(f"[DEBUG] scope_set = {scope_set}") 
     class_records: dict[str, set[str]] = defaultdict(set)
 
     for subject in graph.subjects():
@@ -33,6 +33,9 @@ def get_records_by_class(graph: Graph) -> dict[str, set[str]]:
             str(t) for t in graph.objects(subject, RDF.type)
             if not isinstance(t, BNode)
         ]
+
+        if scope_set:
+            types = [t for t in types if t in scope_set]
 
         if types:
             for t in types:
@@ -81,7 +84,6 @@ def compute_class_property_fill_rates(
             for prop, record_set in prop_counts.items()
         }
 
-        # Sort by fill_rate ascending — worst offenders first
         result[class_uri] = dict(
             sorted(
                 class_fill_rates.items(),
@@ -162,7 +164,7 @@ class PropertyCompletenessMetric(MetricPlugin):
                 f"Dataset '{context.dataset_id}' contains an empty graph."
             )
 
-        class_records = get_records_by_class(graph)
+        class_records = get_records_by_class(graph, context.scope)
 
         if not class_records:
             raise NoTargetRecordsError(

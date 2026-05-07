@@ -78,14 +78,17 @@ def _run_section() -> html.Div:
 
 # ── Source list item ───────────────────────────────────────────────────────
 
-def build_source_item(source: dict) -> dbc.Card:
+def build_source_item(source: dict) -> html.Div:
     """
-    One card per source in the sidebar list.
-    Shows label + type badge, a pencil (edit) button, and a ✕ (delete) button.
+    One card per source.
+    Shows label + type badge, expand (▸/▾) button, edit (✎), delete (✕).
+    Expand triggers lazy ontology fetch and renders the scope tree below.
     """
     source_id   = source["id"]
     label       = source["label"]
     selected    = source["selected"]
+    expanded    = source.get("expanded", False)
+    scope       = source.get("scope") or []
     config_type = source["source_config"]["type"]
 
     type_badge = dbc.Badge(
@@ -95,7 +98,17 @@ def build_source_item(source: dict) -> dbc.Card:
         style={"fontSize": "0.65rem"},
     )
 
-    return dbc.Card(
+    # Show how many classes are scoped when scope is active
+    scope_badge = dbc.Badge(
+        f"{len(scope)} classes",
+        color="primary",
+        className="ms-1",
+        style={"fontSize": "0.65rem"},
+    ) if scope else None
+
+    expand_icon = "▾" if expanded else "▸"
+
+    card = dbc.Card(
         dbc.CardBody(
             dbc.Row([
 
@@ -104,10 +117,27 @@ def build_source_item(source: dict) -> dbc.Card:
                     dbc.Checkbox(
                         id={"type": "source-checkbox", "index": source_id},
                         value=selected,
-                        label=html.Span([label, type_badge]),
+                        label=html.Span(
+                            [label, type_badge] + ([scope_badge] if scope_badge else [])
+                        ),
                     ),
-                    width=8,
+                    width=7,
                     className="d-flex align-items-center",
+                ),
+
+                # Expand button (triggers ontology fetch)
+                dbc.Col(
+                    dbc.Button(
+                        expand_icon,
+                        id={"type": "btn-expand-source", "index": source_id},
+                        color="link",
+                        size="sm",
+                        className="text-muted p-0",
+                        style={"lineHeight": "1", "fontSize": "0.85rem"},
+                        title="Filter scope",
+                    ),
+                    width=1,
+                    className="d-flex align-items-center justify-content-end",
                 ),
 
                 # Edit button
@@ -143,9 +173,87 @@ def build_source_item(source: dict) -> dbc.Card:
             ], align="center", className="g-0"),
             className="py-2 px-2",
         ),
-        className="mb-1",
-        style={"border": "1px solid #dee2e6"},
+        className="mb-0",
+        style={"border": "1px solid #dee2e6", "borderRadius": "4px 4px 0 0" if expanded else "4px"},
     )
+
+    # The scope-tree div is ALWAYS in the DOM — visibility is controlled
+    # entirely by render_scope_trees callback, never by build_source_item.
+    tree_panel = html.Div(
+        id={"type": "scope-tree", "index": source_id},
+        style={"display": "none"},   # callback sets visibility
+    )
+
+    return html.Div([card, tree_panel], className="mb-1")
+
+
+def build_scope_tree(classes: list[dict], source_id: str,
+                     selected_uris: set) -> html.Div:
+    """
+    Renders the ontology class tree as a recursive checkbox list.
+
+    Cascade visual rules:
+      - All descendants selected  → parent checked, normal style
+      - Some descendants selected → parent checked, amber badge "partial"
+      - No descendants selected   → parent unchecked
+
+    Parameters
+    ----------
+    classes       : list of class dicts from /ontology response
+    source_id     : used to build pattern-matched checkbox ids
+    selected_uris : set of URIs currently in source["scope"]
+    """
+    if not classes:
+        return html.P("No classes found.", className="text-muted mb-0",
+                      style={"fontSize": "0.8rem"})
+
+    def _all_descendant_uris(cls: dict) -> set:
+        result = set()
+        for child in cls.get("children", []):
+            result.add(child["uri"])
+            result |= _all_descendant_uris(child)
+        return result
+
+    def _render_node(cls: dict, depth: int = 0) -> html.Div:
+        uri        = cls["uri"]
+        label      = cls.get("label", uri.split("#")[-1].split("/")[-1])
+        count      = cls.get("instance_count", 0)
+        children   = cls.get("children", [])
+        checked    = uri in selected_uris
+
+        # Partial selection indicator for parents with children
+        partial_badge = None
+        if children:
+            desc_uris     = _all_descendant_uris(cls)
+            selected_desc = desc_uris & selected_uris
+            if selected_desc and selected_desc != desc_uris:
+                partial_badge = dbc.Badge(
+                    "partial", color="warning", className="ms-1",
+                    style={"fontSize": "0.6rem"},
+                )
+
+        row = dbc.Row([
+            dbc.Col(
+                dbc.Checkbox(
+                    id={"type": "scope-checkbox", "index": f"{source_id}::{uri}"},
+                    value=checked,
+                    label=html.Span(
+                        [label,
+                         dbc.Badge(str(count), color="secondary",
+                                   className="ms-1",
+                                   style={"fontSize": "0.6rem"})]
+                        + ([partial_badge] if partial_badge else [])
+                    ),
+                ),
+                width=12,
+                style={"paddingLeft": f"{depth * 16 + 4}px"},
+            ),
+        ], className="g-0 mb-1")
+
+        child_nodes = [_render_node(c, depth + 1) for c in children]
+        return html.Div([row] + child_nodes)
+
+    return html.Div([_render_node(c) for c in classes])
 
 
 # ── Add / Edit Source modal ────────────────────────────────────────────────
