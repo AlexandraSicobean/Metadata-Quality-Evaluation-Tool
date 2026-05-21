@@ -1,4 +1,6 @@
 from rdflib import Graph
+import logging
+
 
 from datasource.datasource_interface import DataSource
 from datasource.datasource_exceptions import (
@@ -6,7 +8,6 @@ from datasource.datasource_exceptions import (
     DataSourceLoadError
 )
 import graph.graph_cache as _cache
-
 
 class RDFFileSource(DataSource):
     """
@@ -59,7 +60,13 @@ class RDFFileSource(DataSource):
 
         try:
             graph = Graph()
-            graph.parse(self.file_path, format=self.rdf_format)
+            rdflib_logger = logging.getLogger("rdflib")
+            previous_level = rdflib_logger.level
+            rdflib_logger.setLevel(logging.CRITICAL)
+            try:
+                graph.parse(self.file_path, format=self.rdf_format)
+            finally:
+                rdflib_logger.setLevel(previous_level)
         except FileNotFoundError:
             raise DataSourceLoadError(
                 f"RDF file not found: {self.file_path}"

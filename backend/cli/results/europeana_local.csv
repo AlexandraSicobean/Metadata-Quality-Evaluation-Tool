@@ -1,0 +1,4 @@
+dataset_id,dataset_label,metric_id,metric_name,score,status
+europeana_local,"Europeana EDM Export",structural_completeness,"Structural Completeness",0.9556,computed
+europeana_local,"Europeana EDM Export",property_coverage,"Property Coverage",0.4004,computed
+europeana_local,"Europeana EDM Export",multilingual_labeling_coverage,"Multilingual Labeling Coverage",0.2760,computed

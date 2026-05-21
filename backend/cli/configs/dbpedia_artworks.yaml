@@ -1,0 +1,35 @@
+# Metadata Quality Evaluation — DBpedia Artworks
+# ─────────────────────────────────────────────────────────
+# Fetches 10 artworks from DBpedia via SPARQL and evaluates
+# property completeness and multilingual coverage.
+# Structural completeness is excluded — no EDM profile matches
+# DBpedia data and the fallback produces uninformative results.
+#
+# Run:     python cli/cli.py --config cli/configs/dbpedia_artworks.yaml
+# Inspect: python cli/cli.py --inspect cli/configs/dbpedia_artworks.yaml
+
+datasets:
+
+  - id: dbpedia_artworks
+    label: "DBpedia Artworks"
+    source_config:
+      type: sparql_endpoint
+      endpoint_url: https://dbpedia.org/sparql
+      query: >
+        CONSTRUCT { ?s ?p ?o }
+        WHERE {
+          { SELECT DISTINCT ?s WHERE {
+              ?s a <http://dbpedia.org/ontology/Artwork> .
+            } LIMIT 10
+          }
+          ?s ?p ?o .
+        }
+    scope: null
+
+metrics:
+  - property_coverage
+  - multilingual_labeling_coverage
+
+output:
+  path: results/dbpedia_artworks.json
+  format: json

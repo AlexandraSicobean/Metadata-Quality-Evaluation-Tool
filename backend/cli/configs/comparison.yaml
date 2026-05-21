@@ -1,0 +1,33 @@
+datasets:
+
+  - id: europeana_local
+    label: "Europeana EDM Export"
+    source_config:
+      type: rdf_file
+      file_path: tests/resources/valid.ttl
+      format: turtle
+    scope: null
+
+  - id: dbpedia_artworks
+    label: "DBpedia Artworks"
+    source_config:
+      type: sparql_endpoint
+      endpoint_url: https://dbpedia.org/sparql
+      query: >
+        CONSTRUCT { ?s ?p ?o }
+        WHERE {
+          { SELECT DISTINCT ?s WHERE {
+              ?s a <http://dbpedia.org/ontology/Artwork> .
+            } LIMIT 10
+          }
+          ?s ?p ?o .
+        }
+    scope: null
+
+metrics:
+  - property_coverage
+  - multilingual_labeling_coverage
+
+output:
+  path: results/comparison.json
+  format: json

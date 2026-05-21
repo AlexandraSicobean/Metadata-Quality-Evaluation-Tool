@@ -45,7 +45,6 @@ def get_records_by_class(graph: Graph, scope: list[str] | None = None) -> dict[s
             } 
     """
     scope_set = set(scope) if scope else None
-    print(f"[DEBUG] scope_set = {scope_set}") 
     class_records: dict[str, set[str]] = defaultdict(set)
 
     for subject in graph.subjects():

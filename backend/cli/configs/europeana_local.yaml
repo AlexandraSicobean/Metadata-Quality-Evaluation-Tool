@@ -1,0 +1,18 @@
+datasets:
+
+  - id: europeana_local
+    label: "Europeana EDM Export"
+    source_config:
+      type: rdf_file
+      file_path: tests/resources/valid.ttl
+      format: turtle
+    scope: null
+
+metrics:
+  - structural_completeness
+  - property_coverage
+  - multilingual_labeling_coverage
+
+output:
+  path: results/europeana_local.json
+  format: json

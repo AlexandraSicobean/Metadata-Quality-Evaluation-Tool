@@ -1,0 +1,24 @@
+datasets:
+
+  - id: wikidata_paintings
+    label: "Wikidata Paintings"
+    source_config:
+      type: sparql_endpoint
+      endpoint_url: https://query.wikidata.org/sparql
+      query: >
+        CONSTRUCT { ?s ?p ?o }
+        WHERE {
+          ?s <http://www.wikidata.org/prop/direct/P31>
+             <http://www.wikidata.org/entity/Q3305213> .
+          ?s ?p ?o .
+        }
+        LIMIT 100
+    scope: null
+
+metrics:
+  - property_coverage
+  - multilingual_labeling_coverage
+
+output:
+  path: results/wikidata_paintings.json
+  format: json
