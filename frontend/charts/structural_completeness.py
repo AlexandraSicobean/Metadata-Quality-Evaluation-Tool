@@ -1,3 +1,10 @@
+"""
+Charts for the structural_completeness metric.
+
+Covers the per-record completeness score distribution and a per-class,
+per-dataset range-box chart of min/mean/max completeness.
+"""
+
 import plotly.graph_objects as go
 from charts.palette import COLORS, base_layout
 
@@ -6,6 +13,7 @@ _BUCKETS = ["0.0","0.1","0.2","0.3","0.4","0.5",
 
 
 def _bucket_label(b: str) -> str:
+    """Convert a score bucket key (e.g. "0.9") to a percentage range label."""
     if b == "1.0":
         return "100%"
     v = int(float(b) * 100)
@@ -13,6 +21,7 @@ def _bucket_label(b: str) -> str:
 
 
 def _short_uri(uri: str) -> str:
+    """Return the fragment or last path segment of a URI."""
     return uri.split("#")[-1].split("/")[-1]
 
 
@@ -105,6 +114,7 @@ def class_completeness(
         centres = [-span / 2 + i * step for i in range(n_ds)]
 
     def _hex_rgba(hex_color: str, alpha: float) -> str:
+        """Convert a 6-digit hex colour to an rgba() string."""
         h = hex_color.lstrip("#")
         r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
         return f"rgba({r},{g},{b},{alpha})"

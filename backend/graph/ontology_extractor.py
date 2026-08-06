@@ -1,3 +1,18 @@
+"""
+graph/ontology_extractor.py
+---------------------------
+Extraction of a class hierarchy directly from RDF data.
+
+The hierarchy is built from what the graph actually contains — rdf:type
+for instances and rdfs:subClassOf for the tree structure — so no
+external schema or ontology file is required. Classes without instances
+are omitted, and each class carries the properties its instances use.
+
+This module is independent of the evaluation pipeline. It exists to let
+a user explore an unfamiliar dataset and choose a meaningful scope
+before running any metric.
+"""
+
 from __future__ import annotations
 
 from collections import defaultdict

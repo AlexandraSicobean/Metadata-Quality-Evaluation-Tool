@@ -1,3 +1,11 @@
+"""
+Charts for the foundational_format_consistency metric.
+
+Covers the four concern areas — URI validity, datatype correctness,
+language tag format, and structural issues — as a single summary chart
+of violation counts per area.
+"""
+
 import plotly.graph_objects as go
 from charts.palette import COLORS, base_layout
 
@@ -44,6 +52,7 @@ def sub_scores_chart(ds_details: list[dict]) -> go.Figure:
 
     # Violation count accessors per area
     def _inv_count(details: dict, key: str) -> int:
+        """Return the violation count for one concern area."""
         area = details.get(key, {})
         if key == "structural_issues":
             return (
@@ -53,6 +62,7 @@ def sub_scores_chart(ds_details: list[dict]) -> go.Figure:
         return area.get("invalid_count", 0)
 
     def _total(details: dict, key: str) -> int:
+        """Return the applicable total (denominator) for one concern area."""
         area = details.get(key, {})
         mapping = {
             "uri_validity":         "total_uri_count",

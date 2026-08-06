@@ -1,3 +1,20 @@
+"""
+graph/graph_cache.py
+--------------------
+Thread-safe, process-wide cache for parsed RDF graphs.
+
+Graphs are keyed by a SHA-256 digest of the canonical source
+configuration rather than by dataset id or label, so two differently
+named sources that describe the same data share a single parsed graph.
+
+Scope-filtered subgraphs are intentionally not cached — filtering is
+cheap in-memory work, while the parsing and I/O it depends on is already
+cached here at the full-graph level.
+
+All access is guarded by a module-level lock, since the FastAPI server
+may serve concurrent evaluation requests.
+"""
+
 import hashlib
 import json
 import threading

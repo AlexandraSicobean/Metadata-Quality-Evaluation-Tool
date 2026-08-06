@@ -1,3 +1,9 @@
+"""
+Shared building blocks for metric detail views: extracting per-dataset
+metric data into a chart-ready shape, and rendering analysis/comparison
+header rows with score badges and description tooltips.
+"""
+
 from dash import html
 import dash_bootstrap_components as dbc
 

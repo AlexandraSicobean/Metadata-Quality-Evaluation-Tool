@@ -1,3 +1,11 @@
+"""
+Reusable chart building blocks shared across metric-specific chart modules.
+
+hbar and vbar are the two general-purpose grouped bar chart primitives
+that the per-metric chart modules compose into their more specialised
+visualisations.
+"""
+
 import plotly.graph_objects as go
 from charts.palette import COLORS, base_layout
 

@@ -1,3 +1,30 @@
+"""
+api/evaluation_controller.py
+----------------------------
+HTTP interface for the evaluation backend.
+
+This module deliberately contains no evaluation logic. It validates and
+deserialises incoming requests, delegates to the Evaluation Engine or the
+Ontology Extractor, and serialises the outcome into response models.
+
+Endpoints
+---------
+GET /metrics
+    Implemented metrics and their display metadata, read from
+    metrics_config.json.
+GET /dimensions
+    The quality dimensions that metrics are grouped into.
+POST /ontology
+    Lazy class-hierarchy extraction, used to configure scope filtering.
+POST /evaluate
+    Runs the selected metrics over the requested datasets.
+GET /export/{dataset_id}/{metric_id}/{category}
+    Streams the cached export rows for one metric category as CSV.
+
+Graph loading, caching, and scope filtering all happen further down the
+stack — the router never touches a graph directly.
+"""
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 import io

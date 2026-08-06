@@ -1,3 +1,9 @@
+"""
+Sidebar-independent metric summary cards shown in the main panel:
+one clickable card per metric, grouped by quality dimension, with an
+analysis-mode score badge or a comparison-mode inline bar chart.
+"""
+
 from collections import defaultdict
 
 from dash import html, dcc
@@ -83,6 +89,7 @@ def build_metric_cards(
 
 
 def _card_style(is_active: bool) -> dict:
+    """Return the card style dict, with the accent border when active."""
     return {
         "cursor":     "pointer",
         "borderLeft": f"3px solid {ACCENT}" if is_active else "1px solid #dee2e6",
@@ -91,6 +98,7 @@ def _card_style(is_active: bool) -> dict:
 
 
 def _analysis_card_body(m: dict) -> list:
+    """Build the analysis-mode card body: name, tooltip, and score badge."""
     score_pct   = round(m["score"] * 100)
     badge_color = (
         "success" if score_pct >= 75 else
@@ -137,6 +145,8 @@ def _analysis_card_body(m: dict) -> list:
 
 
 def _comparison_card_body(m: dict, datasets: list[dict]) -> list:
+    """Build the comparison-mode card body: name, tooltip, and an inline
+    per-dataset bar chart of scores for this metric."""
     ds_scores = []
     for ds in datasets:
         match = next(

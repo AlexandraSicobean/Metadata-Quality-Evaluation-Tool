@@ -1,3 +1,14 @@
+"""
+models/request.py
+-----------------
+Pydantic models for incoming API requests.
+
+These define the contract the frontend codes against, and FastAPI
+validates every request body against them before the router runs. The
+CLI's YAML configuration format intentionally mirrors these models, so
+the two entry points describe an evaluation the same way.
+"""
+
 from pydantic import BaseModel
 from typing import Optional, List
 

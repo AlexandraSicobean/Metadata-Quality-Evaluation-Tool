@@ -1,3 +1,10 @@
+"""
+Charts for the property_coverage metric.
+
+Covers per-class overall scores and the per-property fill-rate
+drilldown shown when a class is selected.
+"""
+
 import plotly.graph_objects as go
 from charts.palette import COLORS, base_layout
 
@@ -315,6 +322,7 @@ def comparison_property_drilldown(
         return None
 
     def _mean_rate(prop: str) -> float:
+        """Return the mean fill rate for a property across all datasets."""
         rates = [
             d["details"]
             .get("class_property_fill_rates", {})

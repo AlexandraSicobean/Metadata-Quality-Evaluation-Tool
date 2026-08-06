@@ -1,10 +1,29 @@
+"""
+HTTP client wrapping the FastAPI backend endpoints.
+
+Every function here corresponds to one backend route and translates
+connection failures, timeouts, and non-2xx responses into a single
+APIError, so callbacks only need to handle one exception type regardless
+of what went wrong on the network or server side.
+"""
+
 import requests
 
 BACKEND_URL = "http://127.0.0.1:8000"
 
 
 class APIError(Exception):
+    """Raised for any failure reaching or interpreting a backend response."""
+
     def __init__(self, message: str, status_code: int | None = None):
+        """
+        Parameters
+        ----------
+        message : str
+            Human-readable description shown to the user.
+        status_code : int | None
+            The HTTP status code returned by the backend, if any.
+        """
         super().__init__(message)
         self.message     = message
         self.status_code = status_code

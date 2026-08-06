@@ -1,11 +1,12 @@
-# charts/overview.py
-#
-# High-level summary charts used in the overview panel and comparison view.
-#
-# Public API:
-#   donut(value, height)               — single-value donut
-#   spider(metric_names, datasets)     — radar / spider for comparison overview
-#   metric_score_bar(names, datasets)  — horizontal bar for single-dataset overview
+"""
+High-level summary charts used in the overview panel and comparison view.
+
+Public API:
+    donut(value, height)               — single-value donut
+    spider(metric_names, datasets)     — radar / spider for comparison overview
+    metric_score_bar(names, datasets)  — horizontal bar for single-dataset overview
+    grouped_metric_bar(names, datasets) — grouped bar fallback for <2 metrics
+"""
 
 import plotly.graph_objects as go
 from charts.palette import ACCENT, GREY, COLORS, hex_to_rgba, base_layout

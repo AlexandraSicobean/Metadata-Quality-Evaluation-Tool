@@ -1,3 +1,14 @@
+"""
+models/response.py
+------------------
+Pydantic models for outgoing API responses.
+
+Each model corresponds to an internal domain object, and the from_domain
+converters translate between the two. Keeping the two layers separate
+means a change to an internal representation does not silently alter the
+contract the frontend depends on.
+"""
+
 from __future__ import annotations
 
 from pydantic import BaseModel
@@ -37,6 +48,18 @@ class MetricResultResponse(BaseModel):
 
     @staticmethod
     def from_domain(metric) -> "MetricResultResponse":
+        """
+        Convert a domain MetricResult into its API response model.
+
+        Parameters
+        ----------
+        metric : MetricResult
+            Domain object produced by a metric plugin.
+
+        Returns
+        -------
+        MetricResultResponse
+        """
         return MetricResultResponse(
             metric_id=metric.metric_id,
             name=metric.name,

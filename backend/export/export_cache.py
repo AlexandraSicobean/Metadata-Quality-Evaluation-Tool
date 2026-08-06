@@ -1,3 +1,17 @@
+"""
+export/export_cache.py
+----------------------
+Thread-safe in-memory store for metric export rows.
+
+Metric plugins write their complete, uncapped result lists here during
+evaluate(), keyed by dataset, metric, and category. The response sent to
+the frontend carries only capped samples for display, so this cache is
+what makes a full CSV download possible without recomputing the metric.
+
+Entries are invalidated together with the corresponding graph cache
+entry, which keeps exports from going stale after a source changes.
+"""
+
 import threading
 from typing import Optional
 

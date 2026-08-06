@@ -1,3 +1,8 @@
+"""
+Detail view renderer for the structural_completeness metric: score
+distribution, summary statistics, and per-class completeness sections.
+"""
+
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 

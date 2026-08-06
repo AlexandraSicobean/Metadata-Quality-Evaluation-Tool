@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": ["Read", "Glob", "Grep", "Bash(python -m pytest*)", "Bash(git status)", "Bash(git diff)"],
+    "ask": ["Edit", "Write", "Bash(git add*)", "Bash(git commit*)", "Bash(pip install*)"],
+    "deny": ["Read(./.env)", "Read(./venv/**)", "Bash(rm -rf*)"]
+  }
+}

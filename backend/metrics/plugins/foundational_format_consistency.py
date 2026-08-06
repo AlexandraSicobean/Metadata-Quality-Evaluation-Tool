@@ -764,6 +764,10 @@ def _compute_structural_issues(
 # ---------------------------------------------------------------------------
 
 class FoundationalFormatConsistencyMetric(MetricPlugin):
+    """
+    Scores URI validity, datatype correctness, language tag format, and
+    structural issues, and exports the full violation lists for each.
+    """
 
     id = METRIC_ID
 

@@ -1,3 +1,22 @@
+"""
+datasource/sources/sparql_endpoint.py
+-------------------------------------
+DataSource strategy for remote SPARQL endpoints.
+
+Executes a CONSTRUCT query through RDFLib's SPARQLStore and materialises
+the result into an rdflib.Graph. CONSTRUCT is required rather than
+optional: a SELECT query returns bindings, not a graph, and is rejected
+as a load error.
+
+Queries sent in JSON request bodies must be on a single line — embedded
+newlines cause several public endpoints, Wikidata and DBpedia among
+them, to answer with 502 or 422. YAML configuration files avoid this
+because the folded block scalar collapses the query automatically.
+
+As with local files, the retrieved graph is stored in the shared cache
+so repeated evaluations do not re-query the endpoint.
+"""
+
 from rdflib import Graph
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
 

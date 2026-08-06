@@ -1,3 +1,23 @@
+"""
+engine/evaluation_engine.py
+---------------------------
+Orchestration of the metadata quality evaluation pipeline.
+
+The engine coordinates the other components and implements no data
+loading or metric computation of its own. For each dataset in a request
+it performs six steps:
+
+1. Load the graph through the Data Source factory, which is cache-aware.
+2. Apply the optional class scope filter.
+3. Wrap the result in a DatasetContext.
+4. Run each selected metric plugin, recording its runtime.
+5. Aggregate the metric results into an overall dataset score.
+6. Compute graph statistics for the evaluated subgraph.
+
+Scope filtering happens here, once per dataset, and is never duplicated
+inside individual metrics.
+"""
+
 from datasource.datasource_factory import DataSourceFactory
 from graph.scope_filter import apply as apply_scope
 from graph.scope_filter import stats as compute_stats

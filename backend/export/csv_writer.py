@@ -1,3 +1,13 @@
+"""
+export/csv_writer.py
+--------------------
+Serialisation of export rows into CSV.
+
+Column headers are taken from the keys of the first row, which leaves
+each metric in full control of its own column schema. Nested values are
+JSON-encoded so that a single cell never breaks the row structure.
+"""
+
 import csv
 import io
 import json

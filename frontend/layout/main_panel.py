@@ -1,3 +1,9 @@
+"""
+Top-level main panel layouts, dispatched by callbacks/main_panel.py
+based on store-results: the pre-evaluation guide, the evaluation error
+alert, single-dataset analysis, and multi-dataset comparison.
+"""
+
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go

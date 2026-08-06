@@ -1,3 +1,20 @@
+"""
+models/metric_result.py
+-----------------------
+The outcome of one metric run over one dataset.
+
+Every metric returns this object, whether it succeeded or failed. A
+failed metric carries a status of error and a score of None rather than
+raising, so a single broken metric never discards the results of the
+others.
+
+The details dictionary is deliberately metric-specific: each metric
+decides what diagnostic data its own visualisation needs. Sample lists
+inside it are capped for display, with the full lists kept in the export
+cache.
+"""
+
+
 class MetricResult:
     """
     The evaluation outcome of a single metric over a dataset.

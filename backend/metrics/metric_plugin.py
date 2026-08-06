@@ -1,3 +1,20 @@
+"""
+metrics/metric_plugin.py
+------------------------
+The contract every metric implementation shares.
+
+A metric is a plugin: it receives a DatasetContext and returns a
+MetricResult, and knows nothing about HTTP, the CLI, caching, or scope
+filtering. Adding a metric therefore means writing a subclass, listing
+it in the registry, and describing it in metrics_config.json — the
+engine itself never changes.
+
+Display metadata (name, description, dimension, weight) is not
+hardcoded in the subclass. It is read from metrics_config.json at
+construction time using the subclass id, which keeps a metric's
+presentation configurable without touching its logic.
+"""
+
 from abc import ABC, abstractmethod
 from models.dataset_context import DatasetContext
 from models.metric_result import MetricResult
@@ -20,6 +37,13 @@ class MetricPlugin(ABC):
     id : str
     
     def __init__(self):
+        """
+        Load the display metadata for this metric from configuration.
+
+        The subclass id is used to look up the metric's entry in
+        metrics_config.json. Missing fields fall back to safe defaults,
+        so a metric with no configuration entry is still constructible.
+        """
         with open(CONFIG_PATH) as f:
             config = json.load(f)["metrics"].get(self.id, {})
         self.name        = config.get("name", self.id)

@@ -1,3 +1,14 @@
+"""
+models/dataset_evaluation_result.py
+-----------------------------------
+The complete evaluation outcome for a single dataset.
+
+Produced by the engine once every metric has run and the aggregator has
+combined their scores. This is the internal domain object; the API layer
+converts it into the corresponding response model before serialisation.
+"""
+
+
 class DatasetEvaluationResult:
     """
     Aggregated evaluation result for a dataset.

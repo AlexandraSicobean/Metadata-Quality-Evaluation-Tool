@@ -1,3 +1,31 @@
+"""
+metrics/plugins/structural_completeness.py
+------------------------------------------
+Measures whether records carry the properties their schema profile expects.
+
+Unlike the data-driven metrics, this one validates against an external
+expectation: a SHACL shape profile. The profile is detected from the data
+by counting how many URIs — in subject, predicate, and object position —
+belong to each known vocabulary namespace. Counting all three positions
+rather than instances alone keeps detection working on a scoped subgraph
+that contains no instances of a target class.
+
+When no known vocabulary dominates, a generic core profile is used and
+the result is flagged as low_confidence, since a score produced against
+a profile that does not describe the data says little about its quality.
+
+Score
+-----
+Each record scores
+
+    1 - (missing constraints / expected constraints)
+
+where the expected count is the number of distinct constraint messages in
+the profile. Messages are deduplicated, so a property required by several
+shapes is not counted more than once. The metric score is the mean of the
+per-record scores.
+"""
+
 from pathlib import Path
 from pyshacl import validate
 from rdflib import Graph, URIRef
@@ -352,6 +380,10 @@ def count_shape_properties(shapes_graph: Graph) -> int:
 
 
 class StructuralCompletenessMetric(MetricPlugin):
+    """
+    Validates records against a detected SHACL profile and scores them
+    on the proportion of expected properties they actually carry.
+    """
 
     id = "structural_completeness"
 

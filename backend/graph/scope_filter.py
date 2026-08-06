@@ -1,3 +1,18 @@
+"""
+graph/scope_filter.py
+---------------------
+Restriction of a graph to instances of selected classes, and basic
+graph statistics.
+
+Filtering produces a fresh graph containing only the triples whose
+subject is an instance of at least one class in the requested scope. The
+cached source graph is never mutated, so the same parsed graph can back
+several differently scoped evaluations.
+
+An empty or absent scope returns the original graph unchanged, which
+means a full-graph evaluation costs nothing extra.
+"""
+
 from __future__ import annotations
 
 from rdflib import Graph, RDF, URIRef

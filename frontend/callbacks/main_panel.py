@@ -1,3 +1,11 @@
+"""
+Main panel view-mode dispatch callback.
+
+Reads store-results and delegates to the matching layout builder — guide,
+error, analysis, or comparison — and resets store-ui to the first
+available metric so the detail panel opens on a sensible default.
+"""
+
 from dash import Input, Output, callback
 
 from layout.main_panel import build_guide, build_error, build_analysis, build_comparison

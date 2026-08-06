@@ -1,3 +1,5 @@
+"""Graph handling: caching, ontology extraction, and class-based scope filtering."""
+
 from graph.graph_cache import get_or_load, invalidate, clear
 from graph.ontology_extractor import extract, ClassNode, PropertyInfo
 from graph.scope_filter import apply as apply_scope, stats as graph_stats

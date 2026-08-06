@@ -1,3 +1,9 @@
+"""
+Generic fallback renderer that turns an arbitrary metric details dict
+into a readable Dash layout, for detail data not covered by a dedicated
+metric renderer.
+"""
+
 from dash import html
 import dash_bootstrap_components as dbc
 

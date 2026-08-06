@@ -1,3 +1,8 @@
+"""
+Small reusable Dash components shared across metric cards and detail views:
+cards, stat tiles, section labels, and score badges.
+"""
+
 from dash import html
 import dash_bootstrap_components as dbc
 

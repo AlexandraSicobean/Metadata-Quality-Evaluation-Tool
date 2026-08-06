@@ -1,3 +1,9 @@
+"""
+Detail view renderer for the multilingual_labeling_coverage metric:
+general tagging info, language distribution, the per-class density
+heatmap, and its click-through drilldown.
+"""
+
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
@@ -14,6 +20,19 @@ METRIC_ID = "multilingual_labeling_coverage"
 
 def render(metric: dict, datasets: list[dict],
            click_data: dict | None = None) -> html.Div:
+    """
+    Render the full Multilingual Labeling Coverage detail view.
+
+    Parameters
+    ----------
+    metric : dict
+        Metric metadata from the store.
+    datasets : list[dict]
+        Raw dataset dicts from store-results.
+    click_data : dict | None
+        The most recent heatmap click, from store-ui's
+        multilingual_click, used to render the density drilldown.
+    """
     ds_details = collect_ds_details(datasets, METRIC_ID)
     if not ds_details:
         return html.Div()
@@ -314,6 +333,7 @@ def build_density_drilldown(
 
 
 def _drilldown_hint() -> html.Div:
+    """Placeholder shown in the drilldown panel before a heatmap cell is clicked."""
     return html.Div(
         html.P(
             "Click a cell in the heatmap to explore the density distribution "

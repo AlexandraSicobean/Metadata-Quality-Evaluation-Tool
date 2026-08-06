@@ -1,3 +1,9 @@
+"""
+Detail view renderer for the property_coverage metric: a per-class
+bubble chart (analysis or comparison mode) plus the property fill-rate
+drilldown for the class selected in it.
+"""
+
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
@@ -13,6 +19,16 @@ METRIC_ID = "property_coverage"
 
 
 def render(metric: dict, datasets: list[dict]) -> html.Div:
+    """
+    Render the full Property Coverage detail view.
+
+    Parameters
+    ----------
+    metric : dict
+        Metric metadata from the store.
+    datasets : list[dict]
+        Raw dataset dicts from store-results.
+    """
     ds_details = collect_ds_details(datasets, METRIC_ID)
     comparison = len(ds_details) > 1
 
@@ -34,6 +50,8 @@ def render(metric: dict, datasets: list[dict]) -> html.Div:
 # ── Analysis ──────────────────────────────────────────────────────────────
 
 def _analysis_view(header: html.Div, ds_details: list[dict]) -> html.Div:
+    """Render the single-dataset bubble chart, or a warning if no class
+    scores were computed."""
     fig, has_scores = charts.analysis_bubble(ds_details)
 
     if not has_scores:
@@ -74,6 +92,8 @@ def _analysis_view(header: html.Div, ds_details: list[dict]) -> html.Div:
 # ── Comparison ────────────────────────────────────────────────────────────
 
 def _comparison_view(header: html.Div, ds_details: list[dict]) -> html.Div:
+    """Render the multi-dataset bubble chart, or a warning listing which
+    datasets have no class scores."""
     fig, has_scores = charts.comparison_bubble(ds_details)
 
     if not has_scores:
@@ -185,6 +205,7 @@ def build_comparison_drilldown(
 
 
 def _drilldown_hint() -> html.Div:
+    """Placeholder shown in the drilldown panel before a bubble is clicked."""
     return html.Div(
         html.P(
             "Click a bubble to explore its property fill rates.",

@@ -1,3 +1,34 @@
+"""
+cli/cli.py
+----------
+Server-free entry point into the evaluation pipeline.
+
+The CLI runs exactly the same engine, data sources, and metric plugins as
+the API — the logic is shared, never forked — which makes it the right
+tool for scripted and reproducible evaluations. Its YAML configuration
+format intentionally mirrors the API's internal request models.
+
+Commands
+--------
+--config FILE
+    Run a full evaluation and write the results.
+--inspect FILE
+    Print the class hierarchy for each dataset without running metrics,
+    to discover class URIs before writing a scoped configuration.
+--benchmark FILE
+    Run the evaluation cold then warm and report the parsing cost the
+    shared graph cache eliminates.
+--template
+    Print an annotated example configuration.
+--list-metrics
+    List the available metric IDs and their descriptions.
+
+Relative output paths resolve against this directory rather than the
+current working directory, so results always land in a predictable
+place. Progress and summaries are written to stderr, leaving stdout
+clean enough to redirect.
+"""
+
 import argparse
 import json
 import sys

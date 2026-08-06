@@ -1,3 +1,34 @@
+"""
+metrics/plugins/multilingual_labeling_coverage.py
+-------------------------------------------------
+Measures how well the dataset supports multiple languages.
+
+The metric inspects every literal in the graph and asks two separate
+questions of each resource: how much of its textual content carries a
+language tag at all, and whether more than one language is actually
+present. A resource can be thoroughly tagged and still monolingual, so
+depth and breadth are scored independently and then combined.
+
+Language tags are checked against a simplified BCP 47 pattern. For
+display the distribution is capped at MAX_LANGUAGES columns, with the
+remaining languages collapsed into a single "other" bucket.
+
+Score
+-----
+Each resource scores
+
+    coverage ratio * language breadth multiplier
+
+where the coverage ratio is the proportion of its literals carrying any
+language tag, and the multiplier is 0.0 for no tags, 0.5 for exactly one
+language, and 1.0 for two or more. The metric score is the mean across
+resources, so a resource must be both well tagged and genuinely
+multilingual to score highly.
+
+Per-class rates cover named resources only: blank nodes carry no
+rdf:type and therefore cannot be attributed to any class.
+"""
+
 from collections import defaultdict
 import re
 
@@ -320,6 +351,10 @@ def _compute_score(resources: dict) -> float:
 
 
 class MultilingualLabelingCoverageMetric(MetricPlugin):
+    """
+    Scores the presence and distribution of language-tagged literals,
+    rewarding resources that are both well tagged and multilingual.
+    """
 
     id          = "multilingual_labeling_coverage"
 

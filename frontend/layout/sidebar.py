@@ -1,3 +1,8 @@
+"""
+Sidebar layout: data source cards, the ontology scope-selection tree,
+and the metric selection accordion.
+"""
+
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
@@ -250,6 +255,7 @@ def build_scope_tree(classes: list[dict], source_id: str,
                       style={"fontSize": "0.8rem"})
 
     def _all_descendant_uris(cls: dict) -> set:
+        """Return the URIs of every descendant class, recursively."""
         result = set()
         for child in cls.get("children", []):
             result.add(child["uri"])
@@ -257,6 +263,7 @@ def build_scope_tree(classes: list[dict], source_id: str,
         return result
 
     def _render_node(cls: dict, depth: int = 0) -> html.Div:
+        """Recursively render one class node and its children as checkboxes."""
         uri        = cls["uri"]
         label      = cls.get("label", uri.split("#")[-1].split("/")[-1])
         count      = cls.get("instance_count", 0)

@@ -1,3 +1,14 @@
+"""
+config/config_loader.py
+-----------------------
+Access to the metric and dimension configuration.
+
+metrics_config.json is the single source of truth for metric display
+metadata and aggregation weights. Metric names are never hardcoded in
+the frontend, so adding an entry to that file is what surfaces a metric
+in the user interface.
+"""
+
 import json
 from pathlib import Path
 

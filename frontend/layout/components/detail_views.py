@@ -1,3 +1,13 @@
+"""
+Detail panel composition: overview charts, the per-metric renderer
+registry, the generic fallback renderer, and the property-coverage
+class drilldown.
+
+render_detail_panel is the public entry point called by
+callbacks/ui.py — it dispatches on the active metric to either the
+overview, a registered metric renderer, or the generic fallback.
+"""
+
 from __future__ import annotations
 
 from dash import html, dcc
@@ -28,6 +38,14 @@ _REGISTRY: dict[str, callable] = {
 # ════════════════════════════════════════════════════════════════════════════
 
 def _render_overview(results: dict) -> html.Div:
+    """
+    Build the overview panel shown before a specific metric is selected.
+
+    Uses only the metrics common to every dataset. Picks a spider chart
+    in comparison mode with three or more shared metrics, a grouped bar
+    chart in comparison mode with fewer, and a single sorted bar chart
+    in analysis mode.
+    """
     datasets = results.get("datasets", [])
     if not datasets:
         return html.Div()
@@ -138,7 +156,16 @@ def _render_generic(metric: dict, datasets: list[dict]) -> html.Div:
 # ════════════════════════════════════════════════════════════════════════════
 
 def build_property_drilldown(active_class: str | None, results: dict) -> html.Div:
+    """
+    Render the property fill-rate chart for the class selected in the
+    property_coverage class chart.
+
+    Called directly by callbacks/ui.py rather than through the renderer
+    registry, since it targets a nested panel and not the full detail
+    view.
+    """
     def _short(uri: str) -> str:
+        """Return the fragment or last path segment of a URI."""
         return uri.split("#")[-1].split("/")[-1]
 
     if not active_class or not results:
@@ -177,6 +204,14 @@ def render_detail_panel(
     results: dict,
     ui_state: dict | None = None,
 ) -> html.Div:
+    """
+    Render the detail panel for the currently active metric.
+
+    Dispatches to the overview when no metric is selected, to the
+    registered renderer for the active metric_id, or to the generic
+    fallback renderer when none is registered. ui_state is forwarded to
+    the multilingual renderer only, to support its heatmap drilldown.
+    """
     if not results or results.get("status") == "error":
         return html.Div()
 

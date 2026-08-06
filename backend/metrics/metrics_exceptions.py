@@ -1,3 +1,19 @@
+"""
+metrics/metrics_exceptions.py
+-----------------------------
+Exception hierarchy for metric evaluation.
+
+Errors are split into two families. A MetricConfigurationError means the
+metric itself is set up incorrectly, for example a missing shape profile.
+A MetricExecutionError means the metric is sound but the data prevented
+it from producing a score.
+
+Metrics should generally return error_result() for recoverable problems
+instead of raising, so that one failing metric never discards the
+results of the others.
+"""
+
+
 class MetricError(Exception):
     """Base class for all metric evaluation errors."""
     pass

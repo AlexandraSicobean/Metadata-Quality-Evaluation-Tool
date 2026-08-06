@@ -1,3 +1,9 @@
+"""
+Detail view renderer for the foundational_format_consistency metric:
+the four concern-area sections (URI validity, datatype correctness,
+language tag format, structural issues) and their CSV export buttons.
+"""
+
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
@@ -45,6 +51,16 @@ _SUB_SCORE_LABELS = {
 
 
 def render(metric: dict, datasets: list[dict]) -> html.Div:
+    """
+    Render the full Foundational and Format Consistency detail view.
+
+    Parameters
+    ----------
+    metric : dict
+        Metric metadata from the store.
+    datasets : list[dict]
+        Raw dataset dicts from store-results.
+    """
     ds_details = collect_ds_details(datasets, METRIC_ID)
     if not ds_details:
         return html.Div()
@@ -652,6 +668,7 @@ def _samples_table(samples: list[dict], columns: list[str]) -> dbc.Table:
         Keys to show as columns, in order.
     """
     def _cell(v: str) -> html.Td:
+        """Render one table cell, truncating long values."""
         s = str(v)
         if len(s) > 60:
             s = s[:57] + "…"

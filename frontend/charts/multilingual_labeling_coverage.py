@@ -1,3 +1,10 @@
+"""
+Charts for the multilingual_labeling_coverage metric.
+
+Covers language-tag distribution per resource, literal tagging status,
+and a per-class density heatmap of language coverage.
+"""
+
 import plotly.graph_objects as go
 from charts.palette import COLORS, base_layout
 

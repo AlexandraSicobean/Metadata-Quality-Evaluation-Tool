@@ -1,8 +1,21 @@
+"""
+datasource/datasource_factory.py
+--------------------------------
+Selection of the loading strategy for a source configuration.
+
+Dispatches on the type field of a source configuration and returns the
+matching DataSource implementation. Adding a new source type means
+adding a strategy class and one case here — no other component changes.
+"""
+
 from datasource.datasource_exceptions import UnsupportedDataSourceException
 from datasource.sources.rdf_file import RDFFileSource
 from datasource.sources.sparql_endpoint import SPARQLEndpointSource
 
 class DataSourceFactory:
+    """
+    Factory that maps a source configuration to its DataSource strategy.
+    """
 
     @staticmethod
     def create(source_config: dict):

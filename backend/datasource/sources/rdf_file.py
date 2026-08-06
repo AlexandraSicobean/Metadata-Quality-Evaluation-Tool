@@ -1,3 +1,18 @@
+"""
+datasource/sources/rdf_file.py
+------------------------------
+DataSource strategy for local RDF files.
+
+Parses a file from disk into an rdflib.Graph, inferring the
+serialisation format from the file extension when none is given.
+Results are stored in the shared graph cache, so repeated evaluations of
+the same file pay the parsing cost only once.
+
+RDFLib's own logger is silenced during parsing so that malformed input
+surfaces as a DataSourceLoadError rather than as unstructured warnings
+on the server console.
+"""
+
 from rdflib import Graph
 import logging
 

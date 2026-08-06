@@ -1,3 +1,13 @@
+"""
+Self-contained metric detail-view builders, with their own local colour
+palette and chart layout helpers rather than importing from charts/ or
+layout/components/common.py.
+
+Not imported anywhere else in the frontend — layout/components/detail_views.py
+and layout/components/metric_renderers/ are what callbacks/ui.py actually
+uses for the detail panel.
+"""
+
 from __future__ import annotations
 
 from dash import html, dcc
@@ -606,6 +616,7 @@ def _render_structural_completeness(metric: dict, datasets: list[dict]) -> html.
     ])
 
     def _short(uri: str) -> str:
+        """Return the fragment or last path segment of a URI."""
         return uri.split("#")[-1].split("/")[-1]
 
     class_fig = go.Figure()
@@ -661,6 +672,7 @@ def _render_structural_completeness(metric: dict, datasets: list[dict]) -> html.
         class_section = html.Div()
 
     def _stat_row(label, *values):
+        """Build one row of the summary statistics table."""
         cells = [html.Td(html.Strong(label, style={"fontSize": "0.82rem"}))]
         for v in values:
             cells.append(html.Td(v, style={"fontSize": "0.82rem"}))
@@ -718,6 +730,7 @@ def _render_property_completeness(metric: dict, datasets: list[dict]) -> html.Di
     comparison = len(datasets) > 1
 
     def _short(uri: str) -> str:
+        """Return the fragment or last path segment of a URI."""
         return uri.split("#")[-1].split("/")[-1]
 
     # ── Collect per-dataset details ───────────────────────────────────────
@@ -811,6 +824,7 @@ def _render_property_completeness(metric: dict, datasets: list[dict]) -> html.Di
     ])
 
     def _top_missing(details: dict, top_n: int = 20) -> list[tuple[str, int]]:
+        """Return the top_n properties with the highest total missing count."""
         totals: dict[str, int] = {}
         for class_data in details.get("class_property_fill_rates", {}).values():
             for prop, stats in class_data.items():
@@ -887,6 +901,7 @@ def build_property_drilldown(active_class: str | None, results: dict) -> html.Di
         )
 
     def _short(uri: str) -> str:
+        """Return the fragment or last path segment of a URI."""
         return uri.split("#")[-1].split("/")[-1]
 
     datasets = results.get("datasets", [])

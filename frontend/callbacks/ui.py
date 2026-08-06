@@ -1,3 +1,13 @@
+"""
+Visualization callbacks: drilldown navigation, CSV export, and
+active-card styling.
+
+Driven by store-ui and store-results. Callbacks here never talk to each
+other directly — coordination between the metric-card click, the detail
+panel, and the various drilldown panels happens entirely by reading and
+writing store-ui, as documented on each callback below.
+"""
+
 from dash import Input, Output, State, ALL, callback, ctx, no_update, html
 
 from layout.components.detail_views import render_detail_panel as _render_detail_panel
@@ -22,6 +32,13 @@ from layout.components.metric_renderers.multilingual_labeling_coverage import (
     prevent_initial_call=True,
 )
 def update_active_metric(n_clicks_list, ui_state):
+    """
+    Set active_metric on store-ui when a metric card is clicked.
+
+    Clicking the already-active card clears the selection instead of
+    re-selecting it. active_class is always reset, since a class
+    selected under one metric has no meaning under another.
+    """
     if not any(n for n in (n_clicks_list or []) if n):
         return no_update
     triggered_id = ctx.triggered_id
@@ -50,6 +67,13 @@ def update_active_metric(n_clicks_list, ui_state):
     prevent_initial_call=True,
 )
 def update_card_styles(ui_state, card_ids, current_styles):
+    """
+    Recompute the border accent of every metric card from active_metric.
+
+    Only fires on store-ui changes, but leaves each card's style at
+    no_update unless its border actually changes, so unrelated store-ui
+    writes (active_class, prop_view) do not trigger a re-render here.
+    """
     active = (ui_state or {}).get("active_metric")
     new_styles, changed = [], False
     for i, cid in enumerate(card_ids or []):
@@ -80,6 +104,14 @@ def update_card_styles(ui_state, card_ids, current_styles):
     prevent_initial_call=True,
 )
 def render_detail_panel_callback(ui_state, results, _ui_state_prev):
+    """
+    Render the detail panel for the active metric.
+
+    Only re-renders on an active_metric change. A store-ui write caused
+    by active_class or prop_view is left alone here — those are handled
+    by render_property_drilldown instead, which writes to a nested div
+    rather than replacing the whole panel.
+    """
     if not results or results.get("status") == "error":
         return no_update
 
@@ -117,6 +149,12 @@ def render_detail_panel_callback(ui_state, results, _ui_state_prev):
     prevent_initial_call=True,
 )
 def update_active_class(click_data, ui_state):
+    """
+    Set active_class on store-ui from a property-coverage chart click.
+
+    Clicking the already-active class clears the selection. Reads the
+    class URI out of the clicked point's customdata.
+    """
     if not click_data:
         return no_update
     try:
@@ -140,6 +178,13 @@ def update_active_class(click_data, ui_state):
     prevent_initial_call=True,
 )
 def render_property_drilldown(ui_state, results):
+    """
+    Render the property-coverage class drilldown into its nested panel.
+
+    Writes to property-drilldown-panel rather than the full detail
+    panel, so selecting a class does not wipe and rebuild the whole
+    metric card. No-ops when property_coverage is not the active metric.
+    """
     if (ui_state or {}).get("active_metric") != "property_coverage":
         return no_update
     active_class = (ui_state or {}).get("active_class")
@@ -167,6 +212,15 @@ def render_property_drilldown(ui_state, results):
     prevent_initial_call=True,
 )
 def update_multilingual_click(click_multi, ui_state):
+    """
+    Record a multilingual heatmap click on store-ui.
+
+    Stored rather than written directly to the drilldown panel, since
+    that panel only exists once a multilingual metric is selected and
+    Dash rejects Outputs targeting elements absent at startup.
+    render_detail_panel_callback picks up this store-ui change and
+    re-renders the detail panel with the drilldown included.
+    """
     click_data = next(
         (cd for cd in (click_multi or []) if cd is not None),
         None,

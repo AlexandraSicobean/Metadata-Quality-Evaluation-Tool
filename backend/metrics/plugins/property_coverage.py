@@ -1,3 +1,28 @@
+"""
+metrics/plugins/property_coverage.py
+------------------------------------
+Measures how consistently properties are used within each class.
+
+This metric is entirely data-driven: it imposes no external schema and
+derives its expectation from the data itself. If most instances of a
+class carry a property, an instance missing that property is treated as
+a gap. That makes the metric applicable to collections for which no
+shape profile exists.
+
+Resources are grouped by rdf:type, and those without a usable type fall
+into a synthetic "Unknown" class so that they are still accounted for.
+rdf:type itself is excluded from coverage, since every typed resource
+carries it by construction.
+
+Score
+-----
+Within a class, the fill rate of a property is the proportion of that
+class's resources using it at least once. A class score is the mean of
+its property fill rates, and the metric score is the mean of the class
+scores weighted by class size — so a class with thousands of resources
+influences the result more than one with a handful.
+"""
+
 from collections import defaultdict
 from rdflib import Graph, URIRef, BNode
 from rdflib.namespace import RDF
@@ -227,6 +252,33 @@ class PropertyCoverageMetric(MetricPlugin):
     id          = "property_coverage"
 
     def evaluate(self, context: DatasetContext) -> MetricResult:
+        """
+        Evaluates how consistently properties are used across classes.
+
+        Groups resources by rdf:type, computes the per-class property
+        fill rates, reduces those to one score per class, and combines
+        the class scores into a size-weighted overall score.
+
+        Parameters
+        ----------
+        context : DatasetContext
+            Contains the RDF graph to evaluate and the optional scope.
+
+        Returns
+        -------
+        MetricResult
+            Score: the mean of the class scores, weighted by the number
+            of resources in each class.
+            Details: total record count, resources per class, per-class
+            scores, and per-class property fill rates.
+
+        Raises
+        ------
+        EmptyGraphError
+            If the dataset graph contains no triples.
+        NoTargetRecordsError
+            If the graph contains triples but no typed records.
+        """
         graph = context.graph
 
         if len(graph) == 0:

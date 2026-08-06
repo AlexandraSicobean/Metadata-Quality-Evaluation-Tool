@@ -1,3 +1,11 @@
+"""
+Evaluation-triggering callback.
+
+Calls POST /evaluate through api_client and normalizes the response into
+store-results via make_results, which is what puts the main panel into
+analysis or comparison mode.
+"""
+
 from dash import Input, Output, State, callback, no_update
 
 from api_client import run_evaluation, APIError

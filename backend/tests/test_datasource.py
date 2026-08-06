@@ -1,3 +1,16 @@
+"""
+tests/test_datasource.py
+------------------------
+Unit tests for the data source layer.
+
+Covers the factory's dispatch on source type, successful loading of
+local RDF files, format auto-detection, and the error paths that must
+surface as DataSourceException subclasses rather than as raw parser or
+network failures.
+
+Endpoint tests use mocks, so the suite runs without network access.
+"""
+
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch

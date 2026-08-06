@@ -1,3 +1,5 @@
+"""Shared colour palette and base Plotly layout used by every chart module."""
+
 ACCENT = "#5B6EF5"
 GREY   = "#E9EDF5"
 COLORS = [ACCENT, "#F5A05B", "#5BF5A0", "#F55B6E"]
