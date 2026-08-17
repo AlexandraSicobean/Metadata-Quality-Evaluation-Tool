@@ -13,7 +13,7 @@
       "tooltip": "Is the metadata easy to read and consistently formatted?"
     },
     "Accessibility": {
-      "description": "",
+      "description": "Whether the metadata and the resources it describes can actually be reached over the web.",
       "tooltip": "Can the metadata be found, shared, and reused by others?"
     }
   },
@@ -45,6 +45,13 @@
     "tooltip": "Are the URIs, datatypes, and language tags in the metadata correctly formed?",
     "dimension": "Representational",
     "weight": 1.0
+    },
+    "connectivity": {
+      "name": "Connectivity",
+      "description": "Measures whether every distinct URI referenced by the dataset — as a subject, predicate, or object — is dereferenceable over HTTP.",
+      "tooltip": "Do the URIs in the metadata actually resolve to something on the web?",
+      "dimension": "Accessibility",
+      "weight": 1.0
     }
   }
 }

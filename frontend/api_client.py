@@ -172,19 +172,23 @@ def run_evaluation(sources: list[dict], metric_ids: list[str]) -> list[dict]:
         response = requests.post(
             f"{BACKEND_URL}/evaluate",
             json=payload,
-            timeout=120,
+            # No timeout: the connectivity metric checks every distinct
+            # URI in the dataset with no sampling, which can legitimately
+            # take a long time on a large or host-concentrated dataset.
+            # There's no intermediary (reverse proxy, etc.) between this
+            # client and the backend that would cut the connection on
+            # its own, so let it run for as long as it needs.
+            timeout=None,
         )
     except requests.ConnectionError:
         raise APIError("Cannot reach the backend.")
-    except requests.Timeout:
-        raise APIError("The evaluation timed out. Try reducing the dataset size or metrics.")
-
-    if response.status_code == 400:
-        detail = response.json().get("detail", "Bad request.")
-        raise APIError(f"Evaluation request rejected: {detail}", status_code=400)
 
     if response.status_code != 200:
-        raise APIError(f"Unexpected response from /evaluate: {response.status_code}",
+        try:
+            detail = response.json().get("detail", "Unknown error.")
+        except ValueError:
+            detail = response.text or "Unknown error."
+        raise APIError(f"Evaluation failed: {detail}",
                        status_code=response.status_code)
 
     return response.json()["datasets"]
