@@ -68,6 +68,7 @@ Metrics are grouped into four quality dimensions. Dimensions and metrics are bot
 | `property_coverage` | Property Coverage | Contextual | How consistently properties are used across all instances of each class — data-driven per-class fill rates, weighted by class size. |
 | `multilingual_labeling_coverage` | Multilingual Labeling Coverage | Contextual | Presence and distribution of language-tagged literals: how many resources carry multilingual metadata and how evenly languages are represented. |
 | `foundational_format_consistency` | Foundational and Format Consistency | Representational | URI validity, datatype correctness, BCP 47 language-tag format, and structural issues (blank nodes, empty literals). Each sub-score is exportable separately. |
+| `connectivity` | Connectivity | Accessibility | Whether every distinct URI referenced by the dataset — as a subject, predicate, or object — is dereferenceable over HTTP. Every URI is checked, with no sampling; concurrency (not a cap) is what keeps this tractable.
 
 An **overall score** per dataset is the weighted mean of the metrics that computed successfully. Metrics that failed or were not applicable are excluded rather than counted as zero; if nothing computed, the overall score is `null` rather than a fabricated number.
 
